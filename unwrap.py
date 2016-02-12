@@ -50,19 +50,23 @@ class Main():
     def draw_mask(self):
         cv2.line(self.image, self.point_f, self.point_a, self.COLOR)
         cv2.line(self.image, self.point_c, self.point_d, self.COLOR)
-        # cv2.polylines(self.image, np.int32([self.points]), 1, self.COLOR)
 
         self.draw_ellipse(self.point_a, self.point_b, self.point_c)
         self.draw_ellipse(self.point_d, self.point_e, self.point_f)
 
     def draw_ellipse(self, left, top, right):
+        """
+        :type left: np.array
+        :type top: np.array
+        :type right: np.array
+        """
         aleft = np.array(left)
         atop = np.array(top)
         aright = np.array(right)
 
         # AVG between left and right points
-        center_point = ((left[0] + right[0]) / 2, (left[1] + right[1]) / 2)
-        acenter = np.array(center_point)
+        acenter = (aleft + aright) / 2
+        center_point = tuple(acenter.tolist())
 
         axis = (int(np.linalg.norm(aleft - aright) / 2), int(np.linalg.norm(acenter - atop)))
 
