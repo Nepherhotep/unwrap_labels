@@ -19,12 +19,12 @@ class Main():
         self.height, self.width, channels = self.image.shape
 
     def load_points(self):
-        raw_points = [[-0.31667 * self.width, +0.31094 * self.height],
-                    [-0.01875 * self.width, +0.39219 * self.height],
-                    [+0.27917 * self.width, +0.33125 * self.height],
-                    [+0.29792 * self.width, -0.42188 * self.height],
-                    [-0.03333 * self.width, -0.52969 * self.height],
-                    [-0.28125 * self.width, -0.43594 * self.height]]
+        raw_points = [[-0.31667 * self.width, +0.31406 * self.height],
+                      [-0.03750 * self.width, +0.39375 * self.height],
+                      [+0.28125 * self.width, +0.31406 * self.height],
+                      [+0.29792 * self.width, -0.41094 * self.height],
+                      [-0.01250 * self.width, -0.51094 * self.height],
+                      [-0.27917 * self.width, -0.42812 * self.height]]
 
         points = []
         for point in raw_points:
@@ -50,8 +50,10 @@ class Main():
     def draw_mask(self):
         cv2.line(self.image, self.point_f, self.point_a, self.COLOR)
         cv2.line(self.image, self.point_c, self.point_d, self.COLOR)
+        # cv2.polylines(self.image, np.int32([self.points]), 1, self.COLOR)
+
         self.draw_ellipse(self.point_a, self.point_b, self.point_c)
-        # self.draw_ellipse(self.point_d, self.point_e, self.point_f)
+        self.draw_ellipse(self.point_d, self.point_e, self.point_f)
 
     def draw_ellipse(self, left, top, right):
         aleft = np.array(left)
@@ -59,16 +61,21 @@ class Main():
         aright = np.array(right)
 
         # AVG between left and right points
-
         center_point = ((left[0] + right[0]) / 2, (left[1] + right[1]) / 2)
         acenter = np.array(center_point)
 
         axis = (int(np.linalg.norm(aleft - aright) / 2), int(np.linalg.norm(acenter - atop)))
 
-        angle = np.arctan(aright - aleft)[0]
+        x, y = aleft - aright
+        angle = np.arctan(float(y) / x) * 57.3
 
-        print(aright - aleft, angle)
-        cv2.ellipse(self.image, center_point, axis, -angle, 180, 360, color=self.COLOR)
+        if (atop - acenter)[1] > 0:
+            start_angle, end_angle = 0, 180
+        else:
+            start_angle, end_angle = 180, 360
+
+        cv2.ellipse(self.image, center_point, axis, angle, start_angle, end_angle,
+                    color=self.COLOR)
 
 
 if __name__ == '__main__':
