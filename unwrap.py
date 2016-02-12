@@ -90,7 +90,8 @@ class Main():
         map_y_32 = map_y.astype('float32')
 
         warped = cv2.remap(self.image, map_x_32, map_y_32, cv2.INTER_CUBIC)
-        cv2.imwrite("warped.png", warped)
+
+        cv2.imwrite("warped.png", cv2.transpose(warped))
 
     def calc_source_map(self, col_count, row_count):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, col_count)
