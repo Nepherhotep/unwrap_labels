@@ -44,7 +44,32 @@ class Main():
         self.load_image()
         self.load_points()
         self.draw_mask()
+        self.calc_mask()
         self.save_image()
+
+    def calc_mask(self):
+        col_count = 30
+        row_count = 20
+
+        top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, col_count)
+        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f, col_count)
+
+        cols = []
+        for i in range(col_count):
+            top_point = top_points[i]
+            bottom_point = bottom_points[i]
+
+            delta = (top_point - bottom_point) / float(row_count - 1)
+
+            col = []
+            for j in range(row_count):
+                point = top_point - delta * j
+                col.append(point)
+
+                x, y = map(int, point)
+                cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+
+            cols.append(col)
 
     def draw_poly_mask(self, color=WHITE_COLOR):
         cv2.polylines(self.image, np.int32([self.points]), 1, color)
@@ -55,9 +80,6 @@ class Main():
 
         self.draw_ellipse(self.point_a, self.point_b, self.point_c, color)
         self.draw_ellipse(self.point_d, self.point_e, self.point_f, color)
-
-        self.calc_ellipse_points(self.point_a, self.point_b, self.point_c)
-        self.calc_ellipse_points(self.point_d, self.point_e, self.point_f)
 
     def draw_ellipse(self, left, top, right, color=WHITE_COLOR):
         # AVG between left and right points
@@ -89,28 +111,29 @@ class Main():
 
         # get start and end angles
         if (top - center)[1] > 0:
-            start_angle, end_angle = 0, np.pi
+            delta = np.pi / (points_count - 1)
+
         else:
-            start_angle, end_angle = np.pi, 2 * np.pi
+            delta = - np.pi / (points_count - 1)
 
-        delta = float(end_angle - start_angle) / (points_count - 1)
-
+        points = []
         for i in range(points_count):
-            phi = i * delta + start_angle
-            ro = self.get_ellipse_rad_polar(a, b, phi)
+            phi = i * delta
+            dx, dy = self.get_ellipse_point(a, b, phi)
 
-            x = int(ro * np.cos(phi + angle) + center[0])
-            y = int(ro * np.sin(phi + angle) + center[1])
+            x = int(dx + center[0])
+            y = int(dy + center[1])
 
             cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+            points.append([x, y])
 
-    def get_ellipse_rad_polar(self, a, b, phi):
+        return np.array(points)
+
+    def get_ellipse_point(self, a, b, phi):
         """
         Get ellipse radius in polar coordinates
         """
-        divider = ((a*np.sin(phi)) ** 2 + (b*np.cos(phi)) ** 2) ** 0.5
-        return float(a*b) / divider
-
+        return a * np.cos(phi), b * np.sin(phi)
 
 
 if __name__ == '__main__':
