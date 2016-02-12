@@ -3,6 +3,7 @@ from pprint import pprint
 
 import cv2
 import numpy as np
+from scipy.interpolate import griddata
 
 
 class Main():
@@ -14,6 +15,13 @@ class Main():
         self.width = None
         self.height = None
         self.points = None
+
+        self.point_a = None  # top left
+        self.point_b = None  # top center
+        self.point_c = None  # top right
+        self.point_d = None  # bottom right
+        self.point_e = None  # bottom center
+        self.point_f = None  # bottom left
 
     def load_image(self):
         self.image = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
@@ -35,7 +43,7 @@ class Main():
 
         self.points = np.array(points)
         (self.point_a, self.point_b, self.point_c,
-         self.point_d, self.point_e, self.point_f) =self.points
+         self.point_d, self.point_e, self.point_f) = self.points
 
     def save_image(self):
         cv2.imwrite('out.jpg', self.image)
@@ -46,17 +54,43 @@ class Main():
         self.draw_mask()
 
         col_count = 30
-        row_count = 20
-        map1 = self.calc_source_map(col_count, row_count)
-        map2 = self.calc_dest_map(col_count, row_count)
+        row_count = 30
+        source_map = self.calc_source_map(col_count, row_count)
+        dest_map = self.calc_dest_map(col_count, row_count)
+        self.unwrap_label(source_map, dest_map, col_count, row_count)
         self.save_image()
 
     def calc_dest_map(self, col_count, row_count):
+        width, height = self.get_label_size()
+
+        dx = float(width) / col_count
+        dy = float(height) / row_count
+
         rows = []
-        for i in range(col_count):
-            for j in range(row_count):
-                pass
-        return rows
+        for row in range(row_count):
+            row_list = []
+            for col in range(col_count):
+                row_list.append([dx * col, dy * row])
+
+            rows.append(row_list)
+        return np.array(rows)
+
+    def unwrap_label(self, source_map, dest_map, col_count, row_count):
+        width, height = self.get_label_size()
+
+        grid_x, grid_y = np.mgrid[0:width:(width + 1) * 1j, 0:height:(height + 1) * 1j]
+
+        destination = dest_map.reshape(dest_map.size / 2, 2)
+        source = source_map.reshape(source_map.size / 2, 2)
+
+        grid_z = griddata(destination, source, (grid_x, grid_y), method='cubic')
+        map_x = np.append([], [ar[:,0] for ar in grid_z]).reshape(width + 1, height + 1)
+        map_y = np.append([], [ar[:,1] for ar in grid_z]).reshape(width + 1, height + 1)
+        map_x_32 = map_x.astype('float32')
+        map_y_32 = map_y.astype('float32')
+
+        warped = cv2.remap(self.image, map_x_32, map_y_32, cv2.INTER_CUBIC)
+        cv2.imwrite("warped.png", warped)
 
     def calc_source_map(self, col_count, row_count):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, col_count)
@@ -75,9 +109,9 @@ class Main():
                 row.append(point)
                 x, y = map(int, point)
 
-                cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+                # cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
             rows.append(row)
-        return rows
+        return np.array(rows)
 
     def draw_poly_mask(self, color=WHITE_COLOR):
         cv2.polylines(self.image, np.int32([self.points]), 1, color)
@@ -144,6 +178,21 @@ class Main():
         """
         return a * np.cos(phi), b * np.sin(phi)
 
+    def get_label_size(self):
+        top_left = self.point_a
+        top_right = self.point_c
+        bottom_right = self.point_d
+        bottom_left = self.point_f
+
+        width1 = np.linalg.norm(top_left - top_right)
+        width2 = np.linalg.norm(bottom_left - bottom_right)
+        avg_width = int((width1 + width2) * np.pi / 4)
+
+        height1 = np.linalg.norm(top_left - bottom_left)
+        height2 = np.linalg.norm(top_right - bottom_right)
+        avg_height = int((height1 + height2) / 2)
+        return avg_width, avg_height
+
 
 class Main2(object):
     def run(self):
@@ -151,6 +200,9 @@ class Main2(object):
         from scipy.interpolate import griddata
 
         grid_x, grid_y = np.mgrid[0:149:150j, 0:149:150j]
+
+        print(grid_x)
+        print(grid_y)
         destination = np.array([[0,0], [0,49], [0,99], [0,149],
                           [49,0],[49,49],[49,99],[49,149],
                           [99,0],[99,49],[99,99],[99,149],
@@ -160,6 +212,7 @@ class Main2(object):
                           [107,16],[108,62],[108,111],[107,157],
                           [151,11],[151,58],[151,107],[151,156]])
         grid_z = griddata(destination, source, (grid_x, grid_y), method='cubic')
+
         map_x = np.append([], [ar[:,1] for ar in grid_z]).reshape(150,150)
         map_y = np.append([], [ar[:,0] for ar in grid_z]).reshape(150,150)
         map_x_32 = map_x.astype('float32')
