@@ -57,7 +57,9 @@ class Main():
         col_count = 30
         row_count = 20
         source_map = self.calc_source_map(col_count, row_count)
-        self.unwrap_label_perspective(source_map, col_count, row_count)
+        # self.unwrap_label_perspective(source_map, col_count, row_count)
+        self.unwrap_label_interpolation(source_map, self.calc_dest_map(col_count, row_count),
+                                        col_count, row_count)
         self.draw_mask()
         self.save_image()
 
