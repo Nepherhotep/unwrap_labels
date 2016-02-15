@@ -3,7 +3,11 @@ from pprint import pprint
 
 import cv2
 import numpy as np
-from scipy.interpolate import griddata
+
+try:
+    from scipy.interpolate import griddata
+except ImportError:
+    pass
 
 
 class Main():
@@ -48,7 +52,7 @@ class Main():
 
     def save_image(self):
         cv2.imwrite('out.jpg', self.src_image)
-        cv2.imwrite('dst.jpg', self.dst_image)
+        cv2.imwrite('dst-perspective.jpg', self.dst_image)
 
     def run(self):
         self.load_image()
@@ -57,7 +61,7 @@ class Main():
         col_count = 30
         row_count = 20
         source_map = self.calc_source_map(col_count, row_count)
-        # self.unwrap_label_perspective(source_map, col_count, row_count)
+        self.unwrap_label_perspective(source_map, col_count, row_count)
         self.unwrap_label_interpolation(source_map, col_count, row_count)
         self.draw_mask()
         self.save_image()
@@ -98,7 +102,7 @@ class Main():
         map_y_32 = map_y.astype('float32')
         warped = cv2.remap(self.src_image, map_x_32, map_y_32, cv2.INTER_CUBIC)
 
-        cv2.imwrite("warped.png", cv2.transpose(warped))
+        cv2.imwrite("dst-interpolated.jpg", cv2.transpose(warped))
 
     def unwrap_label_perspective(self, source_map, col_count, row_count):
         """
@@ -173,7 +177,7 @@ class Main():
                 row.append(point)
                 x, y = map(int, point)
 
-                # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+                # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=2)
             rows.append(row)
         return np.array(rows)
 
