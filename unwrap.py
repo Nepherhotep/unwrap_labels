@@ -11,6 +11,9 @@ except ImportError:
 
 
 class Main():
+    COL_COUNT = 30
+    ROW_COUNT = 20
+
     WHITE_COLOR = (255, 255, 255)
     YELLOW_COLOR = (0, 255, 255)
 
@@ -58,37 +61,36 @@ class Main():
         self.load_image()
         self.load_points()
 
-        col_count = 30
-        row_count = 20
-        source_map = self.calc_source_map(col_count, row_count)
-        self.unwrap_label_perspective(source_map, col_count, row_count)
-        self.unwrap_label_interpolation(source_map, col_count, row_count)
+
+        source_map = self.calc_source_map()
+        self.unwrap_label_perspective(source_map)
+        self.unwrap_label_interpolation(source_map)
         self.draw_mask()
         self.save_image()
 
-    def calc_dest_map(self, col_count, row_count):
+    def calc_dest_map(self):
         width, height = self.get_label_size()
 
-        dx = float(width) / (col_count - 1)
-        dy = float(height) / (row_count - 1)
+        dx = float(width) / (self.COL_COUNT - 1)
+        dy = float(height) / (self.ROW_COUNT - 1)
 
         rows = []
-        for row_index in range(row_count):
+        for row_index in range(self.ROW_COUNT):
             row = []
-            for col_index in range(col_count):
+            for col_index in range(self.COL_COUNT):
                 row.append([int(dx * col_index),
                             int(dy * row_index)])
 
             rows.append(row)
         return np.array(rows)
 
-    def unwrap_label_interpolation(self, source_map, col_count, row_count):
+    def unwrap_label_interpolation(self, source_map):
         """
         Unwrap label using interpolation - more accurate method in terms of quality
         """
         width, height = self.get_label_size()
 
-        dest_map = self.calc_dest_map(col_count, row_count)
+        dest_map = self.calc_dest_map()
 
         grid_x, grid_y = np.mgrid[0:width - 1:width * 1j, 0:height - 1:height * 1j]
 
@@ -104,21 +106,21 @@ class Main():
 
         cv2.imwrite("dst-interpolated.jpg", cv2.transpose(warped))
 
-    def unwrap_label_perspective(self, source_map, col_count, row_count):
+    def unwrap_label_perspective(self, source_map):
         """
         Unwrap label using transform, unlike unwrap_label_interpolation doesn't require scipy
         """
         width, height = self.get_label_size()
         self.dst_image = np.zeros((height, width, 3), np.uint8)
 
-        dx = float(width) / (col_count - 1)
-        dy = float(height) / (row_count - 1)
+        dx = float(width) / (self.COL_COUNT - 1)
+        dy = float(height) / (self.ROW_COUNT - 1)
 
         dx_int = int(np.ceil(dx))
         dy_int = int(np.ceil(dy))
 
-        for row_index in range(row_count - 1):
-            for col_index in range(col_count - 1):
+        for row_index in range(self.ROW_COUNT - 1):
+            for col_index in range(self.COL_COUNT - 1):
                 src_cell = (source_map[row_index][col_index],
                             source_map[row_index][col_index + 1],
                             source_map[row_index + 1][col_index],
@@ -160,18 +162,18 @@ class Main():
         return image[np.floor(rect[0][1]):np.ceil(rect[2][1]),
                      np.floor(rect[0][0]):np.ceil(rect[1][0])]
 
-    def calc_source_map(self, col_count, row_count):
-        top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, col_count)
-        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f, col_count)
+    def calc_source_map(self):
+        top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, self.COL_COUNT)
+        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f, self.COL_COUNT)
 
         rows = []
-        for row_index in range(row_count):
+        for row_index in range(self.ROW_COUNT):
             row = []
-            for col_index in range(col_count):
+            for col_index in range(self.COL_COUNT):
                 top_point = top_points[col_index]
                 bottom_point = bottom_points[col_index]
 
-                delta = (top_point - bottom_point) / float(row_count - 1)
+                delta = (top_point - bottom_point) / float(self.ROW_COUNT - 1)
 
                 point = top_point - delta * row_index
                 row.append(point)
