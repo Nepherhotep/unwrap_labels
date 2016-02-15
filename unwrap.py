@@ -48,17 +48,17 @@ class Main():
 
     def save_image(self):
         cv2.imwrite('out.jpg', self.src_image)
+        cv2.imwrite('dst.jpg', self.dst_image)
 
     def run(self):
         self.load_image()
         self.load_points()
-        self.draw_mask()
 
-        col_count = 5
-        row_count = 5
+        col_count = 30
+        row_count = 20
         source_map = self.calc_source_map(col_count, row_count)
-        dest_map = self.calc_dest_map(col_count, row_count)
-        self.unwrap_label_perspective(source_map, dest_map, col_count, row_count)
+        self.unwrap_label_perspective(source_map, col_count, row_count)
+        self.draw_mask()
         self.save_image()
 
     def calc_dest_map(self, col_count, row_count):
@@ -95,11 +95,15 @@ class Main():
 
         cv2.imwrite("warped.png", cv2.transpose(warped))
 
-    def unwrap_label_perspective(self, source_map, dest_map, col_count, row_count):
+    def unwrap_label_perspective(self, source_map, col_count, row_count):
         width, height = self.get_label_size()
+        self.dst_image = np.zeros((height, width, 3), np.uint8)
 
         dx = float(width) / (col_count - 1)
         dy = float(height) / (row_count - 1)
+
+        dx_int = int(np.ceil(dx))
+        dy_int = int(np.ceil(dy))
 
         for row_index in range(row_count - 1):
             for col_index in range(col_count - 1):
@@ -111,15 +115,12 @@ class Main():
                 dst_cell = np.int32([[0, 0], [dx, 0], [0, dy], [dx, dy]])
 
                 M = cv2.getPerspectiveTransform(np.float32(src_cell), np.float32(dst_cell))
-                dst = cv2.warpPerspective(self.src_image, M, (int(dx), int(dy)))
+                dst = cv2.warpPerspective(self.src_image, M, (dx_int, dy_int))
+                x_offset = int(dx * col_index)
+                y_offset = int(dy * row_index)
 
-                cv2.imwrite('dst-{}-{}.jpg'.format(row_index, col_index), dst)
-
-                debug_src = np.int32([src_cell])
-                debug_roi = np.int32([self.get_roi_rect(src_cell)])
-                if (row_index % 2) and (col_index % 2):
-                    cv2.polylines(self.src_image, debug_src, 1, color=self.YELLOW_COLOR)
-                    cv2.polylines(self.src_image, debug_roi, 1, color=self.WHITE_COLOR)
+                self.dst_image[y_offset:y_offset + dy_int,
+                               x_offset:x_offset + dx_int] = dst
 
     def get_roi_rect(self, points):
         max_x = min_x = points[0][0]
@@ -164,7 +165,7 @@ class Main():
                 row.append(point)
                 x, y = map(int, point)
 
-                cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+                # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
             rows.append(row)
         return np.array(rows)
 
