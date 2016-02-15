@@ -58,16 +58,15 @@ class Main():
         row_count = 20
         source_map = self.calc_source_map(col_count, row_count)
         # self.unwrap_label_perspective(source_map, col_count, row_count)
-        self.unwrap_label_interpolation(source_map, self.calc_dest_map(col_count, row_count),
-                                        col_count, row_count)
+        self.unwrap_label_interpolation(source_map, col_count, row_count)
         self.draw_mask()
         self.save_image()
 
     def calc_dest_map(self, col_count, row_count):
         width, height = self.get_label_size()
 
-        dx = float(width) / col_count
-        dy = float(height) / row_count
+        dx = float(width) / (col_count - 1)
+        dy = float(height) / (row_count - 1)
 
         rows = []
         for row_index in range(row_count):
@@ -79,25 +78,32 @@ class Main():
             rows.append(row)
         return np.array(rows)
 
-    def unwrap_label_interpolation(self, source_map, dest_map, col_count, row_count):
+    def unwrap_label_interpolation(self, source_map, col_count, row_count):
+        """
+        Unwrap label using interpolation - more accurate method in terms of quality
+        """
         width, height = self.get_label_size()
 
-        grid_x, grid_y = np.mgrid[0:width:(width + 1) * 1j, 0:height:(height + 1) * 1j]
+        dest_map = self.calc_dest_map(col_count, row_count)
+
+        grid_x, grid_y = np.mgrid[0:width - 1:width * 1j, 0:height - 1:height * 1j]
 
         destination = dest_map.reshape(dest_map.size / 2, 2)
         source = source_map.reshape(source_map.size / 2, 2)
 
         grid_z = griddata(destination, source, (grid_x, grid_y), method='cubic')
-        map_x = np.append([], [ar[:,0] for ar in grid_z]).reshape(width + 1, height + 1)
-        map_y = np.append([], [ar[:,1] for ar in grid_z]).reshape(width + 1, height + 1)
+        map_x = np.append([], [ar[:, 0] for ar in grid_z]).reshape(width, height)
+        map_y = np.append([], [ar[:, 1] for ar in grid_z]).reshape(width, height)
         map_x_32 = map_x.astype('float32')
         map_y_32 = map_y.astype('float32')
-
         warped = cv2.remap(self.src_image, map_x_32, map_y_32, cv2.INTER_CUBIC)
 
         cv2.imwrite("warped.png", cv2.transpose(warped))
 
     def unwrap_label_perspective(self, source_map, col_count, row_count):
+        """
+        Unwrap label using transform, unlike unwrap_label_interpolation doesn't require scipy
+        """
         width, height = self.get_label_size()
         self.dst_image = np.zeros((height, width, 3), np.uint8)
 
@@ -250,32 +256,6 @@ class Main():
         height2 = np.linalg.norm(top_right - bottom_right)
         avg_height = int((height1 + height2) / 2)
         return avg_width, avg_height
-
-
-class Main2(object):
-    def run(self):
-        import cv2
-        from scipy.interpolate import griddata
-
-        grid_x, grid_y = np.mgrid[0:149:150j, 0:149:150j]
-
-        print(grid_x)
-        print(grid_y)
-        destination = np.array([[0,0], [0,49], [0,99], [0,149],
-                          [49,0],[49,49],[49,99],[49,149],
-                          [99,0],[99,49],[99,99],[99,149],
-                          [149,0],[149,49],[149,99],[149,149]])
-        source = np.array([[22,22], [24,68], [26,116], [25,162],
-                          [64,19],[65,64],[65,114],[64,159],
-                          [107,16],[108,62],[108,111],[107,157],
-                          [151,11],[151,58],[151,107],[151,156]])
-        grid_z = griddata(destination, source, (grid_x, grid_y), method='cubic')
-
-        map_x = np.append([], [ar[:,1] for ar in grid_z]).reshape(150,150)
-        map_y = np.append([], [ar[:,0] for ar in grid_z]).reshape(150,150)
-        map_x_32 = map_x.astype('float32')
-        map_y_32 = map_y.astype('float32')
-
 
 
 if __name__ == '__main__':
