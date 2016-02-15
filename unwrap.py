@@ -11,7 +11,8 @@ class Main():
     YELLOW_COLOR = (0, 255, 255)
 
     def __init__(self):
-        self.image = None
+        self.src_image = None
+        self.dst_image = None
         self.width = None
         self.height = None
         self.points = None
@@ -24,8 +25,8 @@ class Main():
         self.point_f = None  # bottom left
 
     def load_image(self):
-        self.image = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
-        self.height, self.width, channels = self.image.shape
+        self.src_image = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
+        self.height, self.width, channels = self.src_image.shape
 
     def load_points(self):
         raw_points = [[-0.31667 * self.width, +0.31406 * self.height],
@@ -46,18 +47,18 @@ class Main():
          self.point_d, self.point_e, self.point_f) = self.points
 
     def save_image(self):
-        cv2.imwrite('out.jpg', self.image)
+        cv2.imwrite('out.jpg', self.src_image)
 
     def run(self):
         self.load_image()
         self.load_points()
         self.draw_mask()
 
-        col_count = 30
-        row_count = 30
+        col_count = 5
+        row_count = 5
         source_map = self.calc_source_map(col_count, row_count)
         dest_map = self.calc_dest_map(col_count, row_count)
-        self.unwrap_label(source_map, dest_map, col_count, row_count)
+        self.unwrap_label_perspective(source_map, dest_map, col_count, row_count)
         self.save_image()
 
     def calc_dest_map(self, col_count, row_count):
@@ -67,15 +68,16 @@ class Main():
         dy = float(height) / row_count
 
         rows = []
-        for row in range(row_count):
-            row_list = []
-            for col in range(col_count):
-                row_list.append([dx * col, dy * row])
+        for row_index in range(row_count):
+            row = []
+            for col_index in range(col_count):
+                row.append([int(dx * col_index),
+                            int(dy * row_index)])
 
-            rows.append(row_list)
+            rows.append(row)
         return np.array(rows)
 
-    def unwrap_label(self, source_map, dest_map, col_count, row_count):
+    def unwrap_label_interpolation(self, source_map, dest_map, col_count, row_count):
         width, height = self.get_label_size()
 
         grid_x, grid_y = np.mgrid[0:width:(width + 1) * 1j, 0:height:(height + 1) * 1j]
@@ -89,9 +91,61 @@ class Main():
         map_x_32 = map_x.astype('float32')
         map_y_32 = map_y.astype('float32')
 
-        warped = cv2.remap(self.image, map_x_32, map_y_32, cv2.INTER_CUBIC)
+        warped = cv2.remap(self.src_image, map_x_32, map_y_32, cv2.INTER_CUBIC)
 
         cv2.imwrite("warped.png", cv2.transpose(warped))
+
+    def unwrap_label_perspective(self, source_map, dest_map, col_count, row_count):
+        width, height = self.get_label_size()
+
+        dx = float(width) / (col_count - 1)
+        dy = float(height) / (row_count - 1)
+
+        for row_index in range(row_count - 1):
+            for col_index in range(col_count - 1):
+                src_cell = (source_map[row_index][col_index],
+                            source_map[row_index][col_index + 1],
+                            source_map[row_index + 1][col_index],
+                            source_map[row_index + 1][col_index + 1])
+
+                dst_cell = np.int32([[0, 0], [dx, 0], [0, dy], [dx, dy]])
+
+                M = cv2.getPerspectiveTransform(np.float32(src_cell), np.float32(dst_cell))
+                dst = cv2.warpPerspective(self.src_image, M, (int(dx), int(dy)))
+
+                cv2.imwrite('dst-{}-{}.jpg'.format(row_index, col_index), dst)
+
+                debug_src = np.int32([src_cell])
+                debug_roi = np.int32([self.get_roi_rect(src_cell)])
+                if (row_index % 2) and (col_index % 2):
+                    cv2.polylines(self.src_image, debug_src, 1, color=self.YELLOW_COLOR)
+                    cv2.polylines(self.src_image, debug_roi, 1, color=self.WHITE_COLOR)
+
+    def get_roi_rect(self, points):
+        max_x = min_x = points[0][0]
+        max_y = min_y = points[0][1]
+        for point in points:
+            x, y = point
+            if x > max_x:
+                max_x = x
+            if x < min_x:
+                min_x = x
+            if y > max_y:
+                max_y = y
+            if y < min_y:
+                min_y = y
+
+        return np.array([
+            [min_x, min_y],
+            [max_x, min_y],
+            [max_x, max_y],
+            [min_x, max_y]
+        ])
+
+    def get_roi(self, image, points):
+        rect = self.get_roi_rect(points)
+        return image[np.floor(rect[0][1]):np.ceil(rect[2][1]),
+                     np.floor(rect[0][0]):np.ceil(rect[1][0])]
 
     def calc_source_map(self, col_count, row_count):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, col_count)
@@ -110,16 +164,16 @@ class Main():
                 row.append(point)
                 x, y = map(int, point)
 
-                # cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+                cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
             rows.append(row)
         return np.array(rows)
 
     def draw_poly_mask(self, color=WHITE_COLOR):
-        cv2.polylines(self.image, np.int32([self.points]), 1, color)
+        cv2.polylines(self.src_image, np.int32([self.points]), 1, color)
 
     def draw_mask(self, color=WHITE_COLOR):
-        cv2.line(self.image, tuple(self.point_f.tolist()), tuple(self.point_a.tolist()), color)
-        cv2.line(self.image, tuple(self.point_c.tolist()), tuple(self.point_d.tolist()), color)
+        cv2.line(self.src_image, tuple(self.point_f.tolist()), tuple(self.point_a.tolist()), color)
+        cv2.line(self.src_image, tuple(self.point_c.tolist()), tuple(self.point_d.tolist()), color)
 
         self.draw_ellipse(self.point_a, self.point_b, self.point_c, color)
         self.draw_ellipse(self.point_d, self.point_e, self.point_f, color)
@@ -139,7 +193,7 @@ class Main():
         else:
             start_angle, end_angle = 180, 360
 
-        cv2.ellipse(self.image, center_point, axis, angle, start_angle, end_angle, color=color)
+        cv2.ellipse(self.src_image, center_point, axis, angle, start_angle, end_angle, color=color)
 
     def calc_ellipse_points(self, left, top, right, points_count):
         center = (left + right) / 2
@@ -167,7 +221,7 @@ class Main():
             x = int(dx + center[0])
             y = int(dy + center[1])
 
-            # cv2.line(self.image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
+            # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
             points.append([x, y])
 
         points.reverse()
