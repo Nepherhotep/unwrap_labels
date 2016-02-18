@@ -105,7 +105,7 @@ class EdgeDetector(object):
         y_top, y_right = np.unravel_index(max_index, matrix.shape)
         cv2.imwrite('matrix.png', matrix)
 
-        # self.draw_mask(dst)
+        self.draw_mask(dst)
         top = (self.get_x_for_y(self.center_line, y_top), y_top)
         right = (self.get_x_for_y(self.line_b, y_right), y_right)
 
@@ -152,10 +152,6 @@ class EdgeDetector(object):
         for x in range(round(center[0]) - width, round(center[0]) + width + 1):
 
             y = self.get_ellipse_y(a, b, center, sign, x)
-            if (y_top == 7) and (y_right == 55):
-                None
-                # cv2.line(imcv, (x, y), (x, y), color=0, thickness=10)
-
             val = imcv[y][x]
             values.append(val)
         return np.average(values)
