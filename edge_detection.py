@@ -148,13 +148,12 @@ class EdgeDetector(object):
         else:
             sign = -1
 
-        values = []
+        val = 0
         for x in range(round(center[0]) - width, round(center[0]) + width + 1):
 
             y = self.get_ellipse_y(a, b, center, sign, x)
-            val = imcv[y][x]
-            values.append(val)
-        return np.average(values)
+            val += imcv[y, x] / float(width * 2)
+        return val
 
     def get_ellipse_y(self, a, b, center, sign, x):
         dx = center[0] - x
