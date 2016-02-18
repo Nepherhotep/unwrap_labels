@@ -29,6 +29,7 @@ class EdgeDetector(object):
 
         self.point_a, self.point_b, self.point_c, self.point_d = (None, None, None, None)
         self.line_a, self.line_b = (None, None)
+        self.center_line = None
 
     def load_points(self):
         if not self.points:
@@ -46,6 +47,11 @@ class EdgeDetector(object):
         self.point_a, self.point_b, self.point_c, self.point_d = self.points
         self.line_a = self.get_line_props(self.point_a, self.point_d)
         self.line_b = self.get_line_props(self.point_b, self.point_c)
+
+    def calc_center_line(self):
+        point1 = (self.point_a + self.point_b) / 2
+        point2 = (self.point_d + self.point_c) / 2
+        self.center_line = self.get_line_props(point1, point2)
 
     def get_line_props(self, point1, point2):
         """
@@ -85,16 +91,21 @@ class EdgeDetector(object):
 
     def detect(self):
         self.load_points()
+        self.calc_center_line()
+        
         dst = self.apply_sobel_filter(self.src_image)
 
         self.draw_mask(dst)
         cv2.imwrite('edges.jpg', dst)
 
+    def debug_point(self, imcv, point):
+        cv2.line(imcv, tuple(point), tuple(point), color=255, thickness=10)
+
     def draw_mask(self, imcv):
         for point in self.points:
-            cv2.line(imcv, tuple(point), tuple(point), color=255, thickness=10)
+            self.debug_point(imcv, point)
 
-        for line in [self.line_a, self.line_b]:
+        for line in [self.line_a, self.line_b, self.center_line]:
             get_point = lambda y: (round(float(y - line[1]) / line[0]), y)
             point1 = get_point(0)
             point2 = get_point(self.height)
