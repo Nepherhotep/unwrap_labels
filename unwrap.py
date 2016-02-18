@@ -7,22 +7,45 @@ import numpy as np
 try:
     from scipy.interpolate import griddata
 except ImportError:
-    pass
+    griddata = None
 
 
-class Main():
+class LabelUnwrapper(object):
     COL_COUNT = 30
     ROW_COUNT = 20
 
     WHITE_COLOR = (255, 255, 255)
     YELLOW_COLOR = (0, 255, 255)
 
-    def __init__(self):
-        self.src_image = None
+    def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
+        """
+        :param pixel_points: Points, whose coordinates specified as pixels
+        :param percent_points: Points, whose coordinates specified as fraction of width/height
+
+        In both cases points represent figure below:
+
+        |        |                  |        |
+        |    B   |                  A        C
+        | /    \ |                  | \    / |
+        A        C                  |   B    |
+        |        |                  |        |
+        |        |       OR         |        |
+        |        |                  |        |
+        F        D                  F        D
+        | \    / |                  | \    / |
+        |   E    |                  |   E    |
+        |        |                  |        |
+
+        So, A-B-C-D-E-F-A polygon represent raw wine label on bottle
+
+        """
+        self.src_image = src_image
+        self.width = self.src_image.shape[1]
+        self.height = src_image.shape[0]
+
         self.dst_image = None
-        self.width = None
-        self.height = None
-        self.points = None
+        self.points = pixel_points
+        self.percent_points = percent_points
 
         self.point_a = None  # top left
         self.point_b = None  # top center
@@ -31,42 +54,30 @@ class Main():
         self.point_e = None  # bottom center
         self.point_f = None  # bottom left
 
-    def load_image(self):
-        self.src_image = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
-        self.height, self.width, channels = self.src_image.shape
-
     def load_points(self):
-        raw_points = [[-0.31667 * self.width, +0.31406 * self.height],
-                      [-0.03750 * self.width, +0.39375 * self.height],
-                      [+0.28125 * self.width, +0.31406 * self.height],
-                      [+0.29792 * self.width, -0.41094 * self.height],
-                      [-0.01250 * self.width, -0.51094 * self.height],
-                      [-0.27917 * self.width, -0.42812 * self.height]]
+        if not self.points:
+            points = []
+            for point in self.percent_points:
+                x = int((point[0] + 0.5) * self.width)
+                y = int((0.5 - point[1]) * self.height )
+                points.append((x, y))
 
-        points = []
-        for point in raw_points:
-            x = int(point[0] + self.width / 2)
-            y = int(self.height / 2 - point[1])
-            points.append((x, y))
+            self.points = np.array(points)
+            (self.point_a, self.point_b, self.point_c,
+             self.point_d, self.point_e, self.point_f) = self.points
 
-        self.points = np.array(points)
-        (self.point_a, self.point_b, self.point_c,
-         self.point_d, self.point_e, self.point_f) = self.points
+        if not len(self.points) == 6:
+            raise ValueError("Points should be an array of 6 elements")
 
-    def save_image(self):
-        cv2.imwrite('out.jpg', self.src_image)
-        cv2.imwrite('dst-perspective.jpg', self.dst_image)
-
-    def run(self):
-        self.load_image()
+    def unwrap(self):
         self.load_points()
 
-
         source_map = self.calc_source_map()
-        self.unwrap_label_perspective(source_map)
-        self.unwrap_label_interpolation(source_map)
-        self.draw_mask()
-        self.save_image()
+        if griddata:
+            self.unwrap_label_interpolation(source_map)
+        else:
+            self.unwrap_label_perspective(source_map)
+        return self.dst_image
 
     def calc_dest_map(self):
         width, height = self.get_label_size()
@@ -103,8 +114,7 @@ class Main():
         map_x_32 = map_x.astype('float32')
         map_y_32 = map_y.astype('float32')
         warped = cv2.remap(self.src_image, map_x_32, map_y_32, cv2.INTER_CUBIC)
-
-        cv2.imwrite("dst-interpolated.jpg", cv2.transpose(warped))
+        self.dst_image = cv2.transpose(warped)
 
     def unwrap_label_perspective(self, source_map):
         """
@@ -163,8 +173,10 @@ class Main():
                      np.floor(rect[0][0]):np.ceil(rect[1][0])]
 
     def calc_source_map(self):
-        top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c, self.COL_COUNT)
-        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f, self.COL_COUNT)
+        top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c,
+                                              self.COL_COUNT)
+        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f,
+                                                 self.COL_COUNT)
 
         rows = []
         for row_index in range(self.ROW_COUNT):
@@ -194,7 +206,9 @@ class Main():
         self.draw_ellipse(self.point_d, self.point_e, self.point_f, color)
 
     def draw_ellipse(self, left, top, right, color=WHITE_COLOR):
-        # AVG between left and right points
+        """
+        Draw ellipse using opencv function
+        """
         center = (left + right) / 2
         center_point = tuple(center.tolist())
 
@@ -218,8 +232,8 @@ class Main():
         b = np.linalg.norm(center - top)
 
         # get ellipse angle
-        x, y = left - right
-        angle = np.arctan(float(y) / x)
+        # x, y = left - right
+        # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
 
         # get start and end angles
         if (top - center)[1] > 0:
@@ -236,7 +250,6 @@ class Main():
             x = int(dx + center[0])
             y = int(dy + center[1])
 
-            # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
             points.append([x, y])
 
         points.reverse()
@@ -265,4 +278,15 @@ class Main():
 
 
 if __name__ == '__main__':
-    Main().run()
+    points = [[-0.31667, +0.31406],
+              [-0.03750, +0.39375],
+              [+0.28125, +0.31406],
+              [+0.29792, -0.41094],
+              [-0.01250, -0.51094],
+              [-0.27917, -0.42812]]
+
+    unwrapper = LabelUnwrapper(src_image=cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED),
+                               percent_points=points)
+    dst_image = unwrapper.unwrap()
+    cv2.imwrite("dst-image.jpg", dst_image)
+
