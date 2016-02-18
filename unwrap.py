@@ -19,8 +19,10 @@ class LabelUnwrapper(object):
 
     def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
         """
+        Point lists are lists of 6 points - [A, B, C, D, E, F]
+
         :param pixel_points: Points, whose coordinates specified as pixels
-        :param percent_points: Points, whose coordinates specified as fraction of width/height
+        :param percent_points: Points, whose coordinates specified as fraction of image width/height
 
         In both cases points represent figure below:
 
@@ -285,8 +287,8 @@ if __name__ == '__main__':
               [-0.01250, -0.51094],
               [-0.27917, -0.42812]]
 
-    unwrapper = LabelUnwrapper(src_image=cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED),
-                               percent_points=points)
+    imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
+    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     dst_image = unwrapper.unwrap()
     cv2.imwrite("dst-image.jpg", dst_image)
 
