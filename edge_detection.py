@@ -8,6 +8,8 @@ def round(value):
 
 
 class EdgeDetector(object):
+    YELLOW_COLOR = (0, 255, 255)
+
     def __init__(self, src_image, pixel_points=[], percent_points=[]):
         """
         Points define two parallel lines - line A and line B
@@ -40,6 +42,7 @@ class EdgeDetector(object):
                 points.append((x, y))
 
             self.points = np.array(points)
+            print(self.points)
 
         if not len(self.points) == 4:
             raise ValueError('Array of points should have length == 4')
@@ -58,9 +61,12 @@ class EdgeDetector(object):
         For line formula y(x) = k * x + b,
         return (k, b)
         """
-        k = float(point2[1] - point1[1]) / (point2[0] - point1[0])
-        b = point2[1] - k * point2[0]
-        return (k, b)
+        if point2[0] - point1[0]:
+            k = float(point2[1] - point1[1]) / (point2[0] - point1[0])
+            b = point2[1] - k * point2[0]
+            return (k, b)
+        else:
+            return (point2[0],)
 
     def apply_sobel_filter(self, imcv):
         """
@@ -94,19 +100,107 @@ class EdgeDetector(object):
         self.calc_center_line()
         
         dst = self.apply_sobel_filter(self.src_image)
+        matrix = self.build_matrix(dst)
+        max_index = matrix.argmax()
+        y_top, y_right = np.unravel_index(max_index, matrix.shape)
+        cv2.imwrite('matrix.png', matrix)
 
-        self.draw_mask(dst)
+        # self.draw_mask(dst)
+        top = (self.get_x_for_y(self.center_line, y_top), y_top)
+        right = (self.get_x_for_y(self.line_b, y_right), y_right)
+
         cv2.imwrite('edges.jpg', dst)
+        self.debug_point(self.src_image, top, self.YELLOW_COLOR)
+        self.debug_point(self.src_image, right, self.YELLOW_COLOR)
 
-    def debug_point(self, imcv, point):
-        cv2.line(imcv, tuple(point), tuple(point), color=255, thickness=10)
+        cv2.imwrite('out.jpg', self.src_image)
+
+    def build_matrix(self, imcv):
+        output = np.zeros((self.height, self.height))
+        max_i, max_j, max_value = 0, 0, 0
+        for i in range(self.height / 5):
+            for j in range(self.height / 5):
+                avg = self.get_avg_for_point(imcv, i, j)
+                output[i, j] = avg
+                if max_value < avg:
+                    max_value = avg
+                    max_i = i
+                    max_j = j
+        return output
+
+    def get_avg_for_point(self, imcv, y_top, y_right):
+        x_top = self.get_x_for_y(self.center_line, y_top)
+        x_right = self.get_x_for_y(self.line_b, y_right)
+        top = np.array([x_top, y_top])
+        right = np.array([x_right, y_right])
+
+        center = self.get_center_point(right)
+
+        # get ellipse axis
+        a = np.linalg.norm(center - right)
+        b = np.linalg.norm(center - top)
+        width = int(a)
+
+        # get start and end angles
+        if (top - center)[1] > 0:
+            sign = 1
+
+        else:
+            sign = -1
+
+        values = []
+        for x in range(round(center[0]) - width, round(center[0]) + width + 1):
+
+            y = self.get_ellipse_y(a, b, center, sign, x)
+            if (y_top == 7) and (y_right == 55):
+                None
+                # cv2.line(imcv, (x, y), (x, y), color=0, thickness=10)
+
+            val = imcv[y][x]
+            values.append(val)
+        return np.average(values)
+
+    def get_ellipse_y(self, a, b, center, sign, x):
+        dx = center[0] - x
+        y = sign * b * (1 - dx * dx / (a * a)) ** 0.5 + center[1]
+        return round(y)
+
+    def get_ellipse_point(self, a, b, phi):
+        """
+        Get ellipse radius in polar coordinates
+        """
+        return a * np.cos(phi), b * np.sin(phi)
+
+    def get_center_point(self, right):
+        if len(self.center_line) == 1:
+            x_center = self.get_x_for_y(self.center_line, right[1])
+            y_center = self.get_y_for_x(self.center_line, x_center)
+        else:
+            k_center = self.center_line[0]
+            k_normal = - 1 / k_center
+            b_normal = right[1] - k_normal * right[0]
+            x_center = (b_normal - self.center_line[1]) / (self.center_line[0] - k_normal)
+            y_center = k_normal * x_center + b_normal
+        return int(x_center), int(y_center)
+
+    def get_y_for_x(self, line, x):
+        return line[0] * x + line[1]
+
+    def debug_point(self, imcv, point, color=255, thickness=3):
+        cv2.line(imcv, tuple(point), tuple(point), color=color, thickness=thickness)
+
+    def get_x_for_y(self, line, y):
+        if len(line) == 1:
+            return line[0]
+        else:
+            return round(float(y - line[1]) / line[0])
 
     def draw_mask(self, imcv):
         for point in self.points:
             self.debug_point(imcv, point)
 
         for line in [self.line_a, self.line_b, self.center_line]:
-            get_point = lambda y: (round(float(y - line[1]) / line[0]), y)
+            get_point = lambda y: (self.get_x_for_y(line, y), y)
             point1 = get_point(0)
             point2 = get_point(self.height)
             cv2.line(imcv, point1, point2, color=255, thickness=2)

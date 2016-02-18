@@ -233,10 +233,6 @@ class LabelUnwrapper(object):
         a = np.linalg.norm(left - right) / 2
         b = np.linalg.norm(center - top)
 
-        # get ellipse angle
-        # x, y = left - right
-        # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=3)
-
         # get start and end angles
         if (top - center)[1] > 0:
             delta = np.pi / (points_count - 1)
