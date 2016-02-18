@@ -3,6 +3,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def round(value):
+    return int(np.round(value))
+
+
 class EdgeDetector(object):
     def __init__(self, src_image, pixel_points=[], percent_points=[]):
         """
@@ -30,8 +34,8 @@ class EdgeDetector(object):
         if not self.points:
             points = []
             for point in self.percent_points:
-                x = self.round((point[0] + 0.5) * self.width)
-                y = self.round((0.5 - point[1]) * self.height)
+                x = round((point[0] + 0.5) * self.width)
+                y = round((0.5 - point[1]) * self.height)
                 points.append((x, y))
 
             self.points = np.array(points)
@@ -86,15 +90,12 @@ class EdgeDetector(object):
         self.draw_mask(dst)
         cv2.imwrite('edges.jpg', dst)
 
-    def round(self, value):
-        return int(np.round(value))
-
     def draw_mask(self, imcv):
         for point in self.points:
             cv2.line(imcv, tuple(point), tuple(point), color=255, thickness=10)
 
         for line in [self.line_a, self.line_b]:
-            get_point = lambda y: (self.round(float(y - line[1]) / line[0]), y)
+            get_point = lambda y: (round(float(y - line[1]) / line[0]), y)
             point1 = get_point(0)
             point2 = get_point(self.height)
             cv2.line(imcv, point1, point2, color=255, thickness=2)
