@@ -4,8 +4,6 @@ from matplotlib import pyplot as plt
 
 
 class EdgeDetector(object):
-    BLUR = 3
-
     def __init__(self, src_image, pixel_points=[], percent_points=[]):
         """
         Points define
@@ -48,18 +46,18 @@ class EdgeDetector(object):
 
     def detect_edges(self):
         gray = cv2.cvtColor(self.src_image, cv2.COLOR_BGR2GRAY)
-        img = cv2.GaussianBlur(gray, (self.BLUR, self.BLUR), 0)
 
         scale = 1
         delta = 0
+        ksize = 3
         ddepth = cv2.CV_16S
 
         # Gradient-X
-        grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=self.BLUR, scale=scale, delta=delta,
+        grad_x = cv2.Sobel(gray, ddepth, 1, 0, ksize=ksize, scale=scale, delta=delta,
                            borderType=cv2.BORDER_DEFAULT)
 
         # Gradient-Y
-        grad_y = cv2.Sobel(gray, ddepth, 0, 1, ksize=self.BLUR, scale=scale, delta=delta,
+        grad_y = cv2.Sobel(gray, ddepth, 0, 1, ksize=ksize, scale=scale, delta=delta,
                            borderType=cv2.BORDER_DEFAULT)
 
         # converting back to uint8
@@ -69,8 +67,6 @@ class EdgeDetector(object):
         # join to images into as single one
         dst = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
         cv2.imwrite('edges.jpg', dst)
-        
-        cv2.destroyAllWindows()
 
     def detect(self):
         self.load_points()
