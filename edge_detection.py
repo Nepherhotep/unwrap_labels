@@ -7,12 +7,48 @@ def round(value):
     return int(np.round(value))
 
 
+class Line(object):
+    def __init__(self, point1, point2):
+        """
+        For line formula y(x) = k * x + b, calc k and b params
+        If the line is vertical, set "vertical" attr to True and save "x" position of the line
+        """
+        self.point1 = point1
+        self.point2 = point2
+        self.vertical = False
+        self.fixed_x = None
+        self.k = None
+        self.b = None
+        self.set_line_props(point1, point2)
+
+    def is_vertical(self):
+        return self.vertical
+
+    def set_line_props(self, point1, point2):
+        if point2[0] - point1[0]:
+            self.k = float(point2[1] - point1[1]) / (point2[0] - point1[0])
+            self.b = point2[1] - self.k * point2[0]
+        else:
+            self.vertical = True
+            self.fixed_x = point2[0]
+
+    def get_x(self, y):
+        if self.is_vertical():
+            return self.fixed_x
+        else:
+            return round(float(y - self.b) / self.k)
+
+    def get_y(self, x):
+        return self.k * x + self.b
+
+
 class EdgeDetector(object):
     YELLOW_COLOR = (0, 255, 255)
 
     def __init__(self, src_image, pixel_points=[], percent_points=[]):
         """
         Points define two parallel lines - line A and line B
+        TODO: make lines to be a separate class
 
         A         B
         |         |
@@ -48,25 +84,13 @@ class EdgeDetector(object):
             raise ValueError('Array of points should have length == 4')
 
         self.point_a, self.point_b, self.point_c, self.point_d = self.points
-        self.line_a = self.get_line_props(self.point_a, self.point_d)
-        self.line_b = self.get_line_props(self.point_b, self.point_c)
+        self.line_a = Line(self.point_a, self.point_d)
+        self.line_b = Line(self.point_b, self.point_c)
 
     def calc_center_line(self):
         point1 = (self.point_a + self.point_b) / 2
         point2 = (self.point_d + self.point_c) / 2
-        self.center_line = self.get_line_props(point1, point2)
-
-    def get_line_props(self, point1, point2):
-        """
-        For line formula y(x) = k * x + b,
-        return (k, b)
-        """
-        if point2[0] - point1[0]:
-            k = float(point2[1] - point1[1]) / (point2[0] - point1[0])
-            b = point2[1] - k * point2[0]
-            return (k, b)
-        else:
-            return (point2[0],)
+        self.center_line = Line(point1, point2)
 
     def apply_sobel_filter(self, imcv):
         """
@@ -106,8 +130,8 @@ class EdgeDetector(object):
         cv2.imwrite('matrix.png', matrix)
 
         self.draw_mask(dst)
-        top = (self.get_x_for_y(self.center_line, y_top), y_top)
-        right = (self.get_x_for_y(self.line_b, y_right), y_right)
+        top = (self.center_line.get_x(y_top), y_top)
+        right = (self.line_b.get_x(y_right), y_right)
 
         cv2.imwrite('edges.jpg', dst)
         self.debug_point(self.src_image, top, self.YELLOW_COLOR)
@@ -129,8 +153,8 @@ class EdgeDetector(object):
         return output
 
     def get_avg_for_point(self, imcv, y_top, y_right):
-        x_top = self.get_x_for_y(self.center_line, y_top)
-        x_right = self.get_x_for_y(self.line_b, y_right)
+        x_top = self.center_line.get_x(y_top)
+        x_right = self.line_b.get_x(y_right)
         top = np.array([x_top, y_top])
         right = np.array([x_right, y_right])
 
@@ -167,35 +191,26 @@ class EdgeDetector(object):
         return a * np.cos(phi), b * np.sin(phi)
 
     def get_center_point(self, right):
-        if len(self.center_line) == 1:
-            x_center = self.get_x_for_y(self.center_line, right[1])
-            y_center = self.get_y_for_x(self.center_line, x_center)
+        if self.center_line.is_vertical():
+            x_center = self.center_line.get_x(right[1])
+            y_center = self.center_line.get_y(x_center)
         else:
-            k_center = self.center_line[0]
+            k_center = self.center_line.k
             k_normal = - 1 / k_center
             b_normal = right[1] - k_normal * right[0]
-            x_center = (b_normal - self.center_line[1]) / (self.center_line[0] - k_normal)
+            x_center = (b_normal - self.center_line.b) / (self.center_line.k - k_normal)
             y_center = k_normal * x_center + b_normal
         return int(x_center), int(y_center)
 
-    def get_y_for_x(self, line, x):
-        return line[0] * x + line[1]
-
     def debug_point(self, imcv, point, color=255, thickness=3):
         cv2.line(imcv, tuple(point), tuple(point), color=color, thickness=thickness)
-
-    def get_x_for_y(self, line, y):
-        if len(line) == 1:
-            return line[0]
-        else:
-            return round(float(y - line[1]) / line[0])
 
     def draw_mask(self, imcv):
         for point in self.points:
             self.debug_point(imcv, point)
 
         for line in [self.line_a, self.line_b, self.center_line]:
-            get_point = lambda y: (self.get_x_for_y(line, y), y)
+            get_point = lambda y: (line.get_x(y), y)
             point1 = get_point(0)
             point2 = get_point(self.height)
             cv2.line(imcv, point1, point2, color=255, thickness=2)
