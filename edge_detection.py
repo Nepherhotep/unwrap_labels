@@ -274,4 +274,6 @@ if __name__ == '__main__':
     dst_image = unwrapper.unwrap()
     cv2.imwrite("dst-image.jpg", dst_image)
 
+    for p in result:
+        d.debug_point(imcv, p, d.YELLOW_COLOR, 10)
     cv2.imwrite('out.jpg', imcv)
