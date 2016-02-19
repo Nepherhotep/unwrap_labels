@@ -195,7 +195,7 @@ class EdgeDetector(object):
     def get_center_point(self, right):
         if self.center_line.is_vertical():
             x_center = self.center_line.get_x(right[1])
-            y_center = self.center_line.get_y(x_center)
+            y_center = right[1]
         else:
             k_center = self.center_line.k
             k_normal = - 1 / k_center
