@@ -57,6 +57,7 @@ class Line(object):
 
 class EdgeDetector(object):
     YELLOW_COLOR = (0, 255, 255)
+    WORKING_SIZE = 256
 
     def __init__(self, src_image, pixel_points=[], percent_points=[]):
         """
@@ -71,16 +72,31 @@ class EdgeDetector(object):
         D         C
 
         """
-        self.src_image = src_image
+        self.src_image, self.scale_factor = self.resize_image(src_image)
         self.preprocessed_image = None
         self.width = self.src_image.shape[1]
-        self.height = src_image.shape[0]
+        self.height = self.src_image.shape[0]
         self.points = pixel_points
         self.percent_points = percent_points
 
         self.point_a, self.point_b, self.point_c, self.point_d = (None, None, None, None)
         self.line_a, self.line_b = (None, None)
         self.center_line = None
+
+    def resize_image(self, imcv):
+        width = imcv.shape[1]
+        height = imcv.shape[0]
+
+        if width > height:
+            new_width = self.WORKING_SIZE
+            scale_factor = float(new_width) / width
+            new_height = int(scale_factor * height)
+        else:
+            new_height = self.WORKING_SIZE
+            scale_factor = float(new_height) / height
+            new_width = int(scale_factor * width)
+
+        return cv2.resize(imcv, (new_width, new_height)), scale_factor
 
     def load_points(self):
         if not self.points:
@@ -145,20 +161,18 @@ class EdgeDetector(object):
         top = np.array((self.center_line.get_x(y_top), y_top))
         right = np.array((self.line_b.get_x(y_right), y_right))
         center_point = np.array(self.get_center_point(right))
+
         left = 2 * center_point - np.array(right)
 
         cv2.imwrite('edges.jpg', dst)
-        self.debug_point(self.src_image, top, self.YELLOW_COLOR)
-        self.debug_point(self.src_image, right, self.YELLOW_COLOR)
-        self.debug_point(self.src_image, left, self.YELLOW_COLOR)
-
-        cv2.imwrite('out.jpg', self.src_image)
+        print(self.scale_factor)
+        return map(np.int32, map(lambda x: x / self.scale_factor, [left, top, right]))
 
     def build_matrix(self, imcv):
         output = np.zeros((self.height, self.height))
         max_i, max_j, max_value = 0, 0, 0
-        for i in range(self.height):
-            for j in range(self.height):
+        for i in range(self.height / 2):
+            for j in range(self.height / 2):
                 avg = self.get_avg_for_point(imcv, i, j)
                 output[i, j] = avg
                 if max_value < avg:
@@ -207,7 +221,8 @@ class EdgeDetector(object):
             y_center = k_normal * x_center + b_normal
         return int(x_center), int(y_center)
 
-    def debug_point(self, imcv, point, color=255, thickness=3):
+    @staticmethod
+    def debug_point(imcv, point, color=255, thickness=3):
         cv2.line(imcv, tuple(point), tuple(point), color=color, thickness=thickness)
 
     def draw_mask(self, imcv):
@@ -229,4 +244,10 @@ if __name__ == '__main__':
               [-0.45507, -0.13624]]
 
     d = EdgeDetector(imcv, percent_points=points)
-    d.detect()
+    result = d.detect()
+
+    for point in result:
+        print(point)
+        d.debug_point(imcv, point, d.YELLOW_COLOR)
+
+    cv2.imwrite('out.jpg', imcv)
