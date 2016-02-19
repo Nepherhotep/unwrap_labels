@@ -1,10 +1,23 @@
 import cv2
+import cython
 import numpy as np
+import math
 from matplotlib import pyplot as plt
+import c_avg_for_ellipse
 
 
 def round(value):
-    return int(np.round(value))
+    return int(value + 0.5)
+
+
+def get_avg_for_ellipse(imcv, a, b, sign, center_x, center_y):
+    val = 0
+    width = int(a)
+    for x in xrange(round(center_x) - width, round(center_x) + width + 1):
+        dx = center_x - x
+        y = round(sign * b * (1 - dx * dx / (a * a)) ** 0.5 + center_y)
+        val += imcv[y, x] / float(width * 2)
+    return val
 
 
 class Line(object):
@@ -163,7 +176,6 @@ class EdgeDetector(object):
         # get ellipse axis
         a = np.linalg.norm(center - right)
         b = np.linalg.norm(center - top)
-        width = int(a)
 
         # get start and end angles
         if (top - center)[1] > 0:
@@ -171,18 +183,10 @@ class EdgeDetector(object):
 
         else:
             sign = -1
-
-        val = 0
-        for x in range(round(center[0]) - width, round(center[0]) + width + 1):
-
-            y = self.get_ellipse_y(a, b, center, sign, x)
-            val += imcv[y, x] / float(width * 2)
+        #
+        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, center[0], center[1])
+        print(val)
         return val
-
-    def get_ellipse_y(self, a, b, center, sign, x):
-        dx = center[0] - x
-        y = sign * b * (1 - dx * dx / (a * a)) ** 0.5 + center[1]
-        return round(y)
 
     def get_ellipse_point(self, a, b, phi):
         """
