@@ -4,6 +4,7 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 import c_avg_for_ellipse
+from unwrap import LabelUnwrapper
 
 
 def round(value):
@@ -152,29 +153,52 @@ class EdgeDetector(object):
         self.calc_center_line()
         
         dst = self.apply_sobel_filter(self.src_image)
-        matrix = self.build_matrix(dst)
-        max_index = matrix.argmax()
-        y_top, y_right = np.unravel_index(max_index, matrix.shape)
-        cv2.imwrite('matrix.png', matrix)
+        points = self.detect_points(dst, True)
 
-        self.draw_mask(dst)
+        points2 = self.detect_points(dst, False)
+        points2.reverse()
+
+        points.extend(points2)
+        return points
+
+    def detect_points(self, imcv, top=True):
+        matrix = self.build_matrix(imcv, top)
+        max_index = matrix.argmax()
+
+        if top:
+            offset = 0
+        else:
+            offset = self.height / 2
+
+        index = np.unravel_index(max_index, matrix.shape)
+        y_top = index[0] + offset
+        y_right = index[1] + offset
+        cv2.imwrite('matrix-{}.png'.format('top' if top else 'bottom'), matrix)
+        self.draw_mask(imcv)
+
         top = np.array((self.center_line.get_x(y_top), y_top))
         right = np.array((self.line_b.get_x(y_right), y_right))
         center_point = np.array(self.get_center_point(right))
 
         left = 2 * center_point - np.array(right)
 
-        cv2.imwrite('edges.jpg', dst)
-        print(self.scale_factor)
+        cv2.imwrite('edges.jpg', imcv)
         return map(np.int32, map(lambda x: x / self.scale_factor, [left, top, right]))
 
-    def build_matrix(self, imcv):
-        output = np.zeros((self.height, self.height))
+    def build_matrix(self, imcv, top=True):
+        output = np.zeros((self.height / 2, self.height / 2))
         max_i, max_j, max_value = 0, 0, 0
-        for i in range(self.height / 2):
-            for j in range(self.height / 2):
+        if top:
+            from_height = 0
+            to_height = self.height / 2
+        else:
+            from_height = self.height / 2
+            to_height = self.height
+
+        for i in range(from_height, to_height):
+            for j in range(from_height, to_height):
                 avg = self.get_avg_for_point(imcv, i, j)
-                output[i, j] = avg
+                output[i - from_height, j - from_height] = avg
                 if max_value < avg:
                     max_value = avg
                     max_i = i
@@ -246,8 +270,8 @@ if __name__ == '__main__':
     d = EdgeDetector(imcv, percent_points=points)
     result = d.detect()
 
-    for point in result:
-        print(point)
-        d.debug_point(imcv, point, d.YELLOW_COLOR)
+    unwrapper = LabelUnwrapper(src_image=imcv, pixel_points=result)
+    dst_image = unwrapper.unwrap()
+    cv2.imwrite("dst-image.jpg", dst_image)
 
     cv2.imwrite('out.jpg', imcv)

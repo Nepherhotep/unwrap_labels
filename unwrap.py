@@ -65,8 +65,8 @@ class LabelUnwrapper(object):
                 points.append((x, y))
 
             self.points = np.array(points)
-            (self.point_a, self.point_b, self.point_c,
-             self.point_d, self.point_e, self.point_f) = self.points
+        (self.point_a, self.point_b, self.point_c,
+         self.point_d, self.point_e, self.point_f) = self.points
 
         if not len(self.points) == 6:
             raise ValueError("Points should be an array of 6 elements")
