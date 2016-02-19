@@ -9,6 +9,6 @@ def get_avg_for_ellipse(np.ndarray[np.uint8_t, ndim=2] imcv, float a, float b, i
     cdef int dx, y
     for x from int(center_x) - width <= x <= int(center_x) + width:
         dx = center_x - x
-        y = int(sign * b * (1 - dx * dx / (a * a)) ** 0.5 + center_y)
+        y = int(sign * b * pow((1 - dx * dx / (a * a)), 0.5) + center_y)
         val += imcv[y, x] / float(width * 2)
     return int(val)

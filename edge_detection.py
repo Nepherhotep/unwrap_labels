@@ -91,7 +91,6 @@ class EdgeDetector(object):
                 points.append((x, y))
 
             self.points = np.array(points)
-            print(self.points)
 
         if not len(self.points) == 4:
             raise ValueError('Array of points should have length == 4')
@@ -185,7 +184,6 @@ class EdgeDetector(object):
             sign = -1
         #
         val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, center[0], center[1])
-        print(val)
         return val
 
     def get_ellipse_point(self, a, b, phi):
