@@ -7,6 +7,7 @@ cimport cython
 @cython.cdivision(True)
 def get_avg_for_ellipse(np.ndarray[np.uint8_t, ndim=2] imcv, double a, double b, signed long sign,
                              signed long center_x, signed long center_y):
+    # TODO: add ellipse angle
     cdef double val = 0
     cdef unsigned long width = int(a)
     cdef signed long x, y
