@@ -142,12 +142,15 @@ class EdgeDetector(object):
         cv2.imwrite('matrix.png', matrix)
 
         self.draw_mask(dst)
-        top = (self.center_line.get_x(y_top), y_top)
-        right = (self.line_b.get_x(y_right), y_right)
+        top = np.array((self.center_line.get_x(y_top), y_top))
+        right = np.array((self.line_b.get_x(y_right), y_right))
+        center_point = np.array(self.get_center_point(right))
+        left = 2 * center_point - np.array(right)
 
         cv2.imwrite('edges.jpg', dst)
         self.debug_point(self.src_image, top, self.YELLOW_COLOR)
         self.debug_point(self.src_image, right, self.YELLOW_COLOR)
+        self.debug_point(self.src_image, left, self.YELLOW_COLOR)
 
         cv2.imwrite('out.jpg', self.src_image)
 
