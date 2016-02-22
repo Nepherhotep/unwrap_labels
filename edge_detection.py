@@ -223,8 +223,14 @@ class EdgeDetector(object):
 
         else:
             sign = -1
+
+        if self.center_line.is_vertical():
+            k_normal = 0
+        else:
+            k_normal = - 1 / self.center_line.k
         #
-        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, center[0], center[1])
+        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, k_normal,
+                                                    center[0], center[1])
         return val
 
     def get_ellipse_point(self, a, b, phi):
