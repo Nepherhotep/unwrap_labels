@@ -4,6 +4,8 @@ from pprint import pprint
 import cv2
 import numpy as np
 
+from trig_utils import Line
+
 
 class LabelUnwrapper(object):
     COL_COUNT = 30
@@ -51,6 +53,8 @@ class LabelUnwrapper(object):
         self.point_e = None  # bottom center
         self.point_f = None  # bottom left
 
+        self.center_line = None
+
     def load_points(self):
         if not self.points:
             points = []
@@ -63,6 +67,10 @@ class LabelUnwrapper(object):
         (self.point_a, self.point_b, self.point_c,
          self.point_d, self.point_e, self.point_f) = self.points
 
+        center_top = (self.point_a + self.point_c) / 2
+        center_bottom = (self.point_d + self.point_f) / 2
+
+        self.center_line = Line(center_bottom, center_top)
         if not len(self.points) == 6:
             raise ValueError("Points should be an array of 6 elements")
 
@@ -239,8 +247,8 @@ class LabelUnwrapper(object):
             phi = i * delta
             dx, dy = self.get_ellipse_point(a, b, phi)
 
-            x = int(dx + center[0])
-            y = int(dy + center[1])
+            x = int(dx * self.center_line.angle_cos - dy * self.center_line.angle_sin + center[0])
+            y = int(dx * self.center_line.angle_sin + dy * self.center_line.angle_cos + center[1])
 
             points.append([x, y])
 
@@ -277,8 +285,15 @@ if __name__ == '__main__':
               [-0.01250, -0.51094],
               [-0.27917, -0.42812]]
 
-    imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
+    points = [[-0.24379, +0.37536],
+                [+0.02951, +0.41120],
+                [+0.31177, +0.36080],
+                [+0.26099, -0.29892],
+                [-0.04068, -0.34709],
+                [-0.27366, -0.27876]]
+
+    imcv = cv2.imread('image4.jpg', cv2.IMREAD_UNCHANGED)
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     dst_image = unwrapper.unwrap()
     cv2.imwrite("dst-image.jpg", dst_image)
-
+    cv2.imwrite("out-unwrap.jpg", imcv)
