@@ -180,8 +180,8 @@ class EdgeDetector(object):
         center = self.get_center_point(right)
 
         # get ellipse axis
-        a = np.linalg.norm(center - right)
-        b = np.linalg.norm(center - top)
+        a = self.get_axis_size(center - right)
+        b = self.get_axis_size(center - top)
 
         # get start and end angles
         if (top - center)[1] > 0:
@@ -195,6 +195,9 @@ class EdgeDetector(object):
                                                     self.center_line.angle_cos,
                                                     self.center_line.angle_sin)
         return val
+
+    def get_axis_size(self, vector):
+        return np.sqrt(vector[0] * vector[0] + vector[1] * vector[1])
 
     def get_ellipse_point(self, a, b, phi):
         """
