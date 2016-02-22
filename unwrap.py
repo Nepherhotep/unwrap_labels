@@ -4,11 +4,6 @@ from pprint import pprint
 import cv2
 import numpy as np
 
-try:
-    from scipy.interpolate import griddata
-except ImportError:
-    griddata = None
-
 
 class LabelUnwrapper(object):
     COL_COUNT = 30
@@ -75,10 +70,7 @@ class LabelUnwrapper(object):
         self.load_points()
 
         source_map = self.calc_source_map()
-        if griddata:
-            self.unwrap_label_interpolation(source_map)
-        else:
-            self.unwrap_label_perspective(source_map)
+        self.unwrap_label_perspective(source_map)
         return self.dst_image
 
     def calc_dest_map(self):
@@ -101,6 +93,8 @@ class LabelUnwrapper(object):
         """
         Unwrap label using interpolation - more accurate method in terms of quality
         """
+        from scipy.interpolate import griddata
+
         width, height = self.get_label_size()
 
         dest_map = self.calc_dest_map()

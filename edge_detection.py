@@ -83,6 +83,8 @@ class EdgeDetector(object):
         self.point_a, self.point_b, self.point_c, self.point_d = (None, None, None, None)
         self.line_a, self.line_b = (None, None)
         self.center_line = None
+        self.center_line_rot_cos = None
+        self.center_line_rot_sin = None
 
     def resize_image(self, imcv):
         width = imcv.shape[1]
@@ -120,6 +122,15 @@ class EdgeDetector(object):
         point1 = (self.point_a + self.point_b) / 2
         point2 = (self.point_d + self.point_c) / 2
         self.center_line = Line(point1, point2)
+
+        if self.center_line.is_vertical():
+            k_normal = 0
+        else:
+            k_normal = - 1 / self.center_line.k
+
+        angle = np.arctan(k_normal)
+        self.center_line_rot_cos = np.cos(angle)
+        self.center_line_rot_sin = np.sin(angle)
 
     def apply_sobel_filter(self, imcv):
         """
@@ -224,16 +235,10 @@ class EdgeDetector(object):
         else:
             sign = -1
 
-        if self.center_line.is_vertical():
-            k_normal = 0
-        else:
-            k_normal = - 1 / self.center_line.k
-
-        angle = np.arctan(k_normal)
-
         #
-        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, angle,
-                                                    center[0], center[1])
+        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, center[0], center[1],
+                                                    self.center_line_rot_cos,
+                                                    self.center_line_rot_sin)
         return val
 
     def get_ellipse_point(self, a, b, phi):

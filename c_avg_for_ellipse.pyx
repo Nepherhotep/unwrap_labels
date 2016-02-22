@@ -11,7 +11,7 @@ cdef double PI = 3.14159265358979
 @cython.boundscheck(False)
 @cython.cdivision(True)
 def get_avg_for_ellipse(np.ndarray[np.uint8_t, ndim=2] imcv, double a, double b, signed long sign,
-                        double angle, signed long center_x, signed long center_y):
+                        signed long center_x, signed long center_y, double rot_cos, double rot_sin):
     # TODO: add ellipse angle
     cdef double val = 0
     cdef signed long x, y, points_count
@@ -25,9 +25,9 @@ def get_avg_for_ellipse(np.ndarray[np.uint8_t, ndim=2] imcv, double a, double b,
         dx = a * cos(phi)
         dy = b * sin(phi)
 
-        x = int(dx * cos(angle) - dy * sin(angle) + center_x)
-        y = int(dx * sin(angle) + dy * cos(angle) + center_y)
+        x = int(dx * rot_cos - dy * rot_sin + center_x)
+        y = int(dx * rot_sin + dy * rot_cos + center_y)
 
-        val += (imcv[y, x] / (a * 2))
+        val += (imcv[y, x] / points_count)
 
     return int(val)
