@@ -153,7 +153,6 @@ class EdgeDetector(object):
 
     def build_matrix(self, imcv, top=True):
         output = np.zeros((self.height / 2, self.height / 2))
-        max_i, max_j, max_value = 0, 0, 0
         if top:
             from_height = 0
             to_height = self.height / 2
@@ -165,10 +164,6 @@ class EdgeDetector(object):
             for j in range(from_height, to_height):
                 avg = self.get_avg_for_point(imcv, i, j)
                 output[i - from_height, j - from_height] = avg
-                if max_value < avg:
-                    max_value = avg
-                    max_i = i
-                    max_j = j
         return output
 
     def get_avg_for_point(self, imcv, y_top, y_right):
