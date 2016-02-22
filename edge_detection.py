@@ -233,7 +233,7 @@ class EdgeDetector(object):
 
         #
         val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, angle,
-                                                    center[0], center[1], 0)
+                                                    center[0], center[1])
         return val
 
     def get_ellipse_point(self, a, b, phi):
