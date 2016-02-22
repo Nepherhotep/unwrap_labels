@@ -61,7 +61,7 @@ class LabelUnwrapper(object):
             points = []
             for point in self.percent_points:
                 x = int((point[0] + 0.5) * self.width)
-                y = int((0.5 - point[1]) * self.height )
+                y = int((0.5 - point[1]) * self.height)
                 points.append((x, y))
 
             self.points = np.array(points)
