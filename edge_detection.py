@@ -228,9 +228,12 @@ class EdgeDetector(object):
             k_normal = 0
         else:
             k_normal = - 1 / self.center_line.k
+
+        angle = np.arctan(k_normal)
+
         #
-        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, k_normal,
-                                                    center[0], center[1])
+        val = c_avg_for_ellipse.get_avg_for_ellipse(imcv, a, b, sign, angle,
+                                                    center[0], center[1], 0)
         return val
 
     def get_ellipse_point(self, a, b, phi):
@@ -263,7 +266,7 @@ class EdgeDetector(object):
             get_point = lambda y: (line.get_x(y), y)
             point1 = get_point(0)
             point2 = get_point(self.height)
-            cv2.line(imcv, point1, point2, color=255, thickness=2)
+            cv2.line(imcv, point1, point2, color=255, thickness=1)
 
 
 if __name__ == '__main__':
