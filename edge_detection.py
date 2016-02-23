@@ -12,16 +12,6 @@ def round(value):
     return int(value + 0.5)
 
 
-def get_avg_for_ellipse(imcv, a, b, sign, center_x, center_y):
-    val = 0
-    width = int(a)
-    for x in xrange(round(center_x) - width, round(center_x) + width + 1):
-        dx = center_x - x
-        y = round(sign * b * (1 - dx * dx / (a * a)) ** 0.5 + center_y)
-        val += imcv[y, x] / float(width * 2)
-    return val
-
-
 class EdgeDetector(object):
     YELLOW_COLOR = (0, 255, 255)
     WORKING_SIZE = 256
