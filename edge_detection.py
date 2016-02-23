@@ -127,8 +127,11 @@ class EdgeDetector(object):
             offset = self.height / 2
 
         index = np.unravel_index(max_index, matrix.shape)
+
         y_top = index[0] + offset
         y_right = index[1] + offset
+
+        cv2.line(matrix, (index[1], index[0]), (index[1], index[0]), 255, thickness=1)
         cv2.imwrite('matrix-{}.png'.format('top' if top else 'bottom'), matrix)
         self.draw_mask(imcv)
 
@@ -218,11 +221,19 @@ class EdgeDetector(object):
 
 
 if __name__ == '__main__':
-    imcv = cv2.imread('image2.jpg', cv2.IMREAD_UNCHANGED)
-    points = [[-0.45550, +0.20889],
-              [+0.46992, +0.19538],
-              [+0.46483, -0.16038],
-              [-0.45507, -0.13624]]
+    # imcv = cv2.imread('image2.jpg', cv2.IMREAD_UNCHANGED)
+    # points = [[-0.45550, +0.20889],
+    #           [+0.46992, +0.19538],
+    #           [+0.46483, -0.16038],
+    #           [-0.45507, -0.13624]]
+
+    imcv = cv2.imread('/home/alex/Projects/unwrap_label/images/IMG_20160220_124604.jpg',
+                  cv2.IMREAD_UNCHANGED)
+    points = [[-0.44853, +0.40219],
+              [+0.45487, +0.40219],
+              [+0.34443, -0.48093],
+              [-0.38227, -0.47721]]
+
 
     d = EdgeDetector(imcv, percent_points=points)
     result = d.detect()
