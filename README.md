@@ -30,4 +30,7 @@ how to do that:
 
 1. Hough transform to detect vertical lines edges of the bottle (lines A-F, C-D)
 2. Due to bottle's symmetry - another Hough transform to detect upper and bottom ellipses.
-A-B-C ellipse reduced to just A-B coordinate, as well C-D-F - to just D-F.
+A-B-C ellipse can reduced to just A-B coordinate, as well C-D-F - to just D-F (assuming vertical lines
+are already detected).
+
+Alternatively you can use neural networks, which will provide more stable behavior for complicated cases
