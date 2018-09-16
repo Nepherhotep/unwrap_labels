@@ -6,12 +6,18 @@ Algorithm to unwrap labels using edge markers
 ## How it works
 
 You need to specify just 6 markers to unapply distortion. Let's take the example below:
-![alt text](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original.jpg)
+![original image](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original.jpg)
 
 Markers depicted on the image below. As one of the markers is out of the image, 
 let's just increase canvas a bit.
 
-![alt text](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/corner-points.jpg)
+![markers image](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/corner-points.jpg)
+
+The library creates a mesh, which will be transformed into a plane:
+![mesh](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original-with-mesh.jpg)
+
+Unwrapped image:
+![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
 ## Makers detection
 
