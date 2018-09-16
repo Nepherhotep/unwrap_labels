@@ -16,6 +16,7 @@ let's just increase canvas a bit.
 The library creates a mesh, which will be transformed into a plane:
 ![mesh](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original-with-mesh.jpg)
 
+
 Unwrapped image:
 ![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
