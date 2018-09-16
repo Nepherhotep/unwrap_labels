@@ -9,15 +9,17 @@ You need to specify just 6 markers to unapply distortion. Let's take the example
 ![original image](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original.jpg)
 
 Markers depicted on the image below. As one of the markers is out of the image, 
-let's just increase canvas a bit.
-
+let's just increase canvas a bit:
 ![markers image](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/corner-points.jpg)
 
 The library creates a mesh, which will be transformed into a plane:
 ![mesh](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/original-with-mesh.jpg)
 
 
-Unwrapped image:
+The unwrapped image is below. There are two ways to unapply transform - with or without
+interpolation. The interpolated method generates a better image, but requires to have
+scipy dependency installed (it might be an issue if you use Amazon lambda, which has limited
+library size):
 ![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
 ## Makers detection
