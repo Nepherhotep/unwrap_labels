@@ -20,6 +20,7 @@ The unwrapped image is below. There are two ways to unapply transform - with or 
 interpolation. The interpolated method generates a better image, but requires to have
 scipy dependency installed (it might be an issue if you use Amazon lambda, which has limited
 library size):
+
 ![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
 ## Makers detection
