@@ -23,6 +23,9 @@ library size):
 
 ![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
+It's depicted on the schema below how cylinder distortion appears on bottle:
+![schema](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/label_schema.png)
+
 ## Makers detection
 
 Makers detection is not a part of this library, however I'll provide some clues
