@@ -98,6 +98,7 @@ class LabelUnwrapper(object):
         self.point_f = None  # bottom left
 
         self.center_line = None
+        self.load_points()
 
     def load_points(self):
         if not self.points:
@@ -119,8 +120,6 @@ class LabelUnwrapper(object):
             raise ValueError("Points should be an array of 6 elements")
 
     def unwrap(self):
-        self.load_points()
-
         source_map = self.calc_source_map()
         self.unwrap_label_perspective(source_map)
         return self.dst_image
@@ -332,6 +331,7 @@ if __name__ == '__main__':
 
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
-    dst_image = unwrapper.unwrap()
-    cv2.imwrite("dst-image.jpg", dst_image)
+    # dst_image = unwrapper.unwrap()
+    # cv2.imwrite("dst-image.jpg", dst_image)
+    unwrapper.draw_mask()
     cv2.imwrite("out-unwrap.jpg", imcv)
