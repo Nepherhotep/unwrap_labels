@@ -2,6 +2,10 @@ import cv2
 import numpy as np
 
 
+WHITE_COLOR = (255, 255, 255)
+YELLOW_COLOR = (0, 255, 255)
+
+
 class Line(object):
     def __init__(self, point1, point2):
         """
@@ -54,9 +58,6 @@ class Line(object):
 class LabelUnwrapper(object):
     COL_COUNT = 30
     ROW_COUNT = 20
-
-    WHITE_COLOR = (255, 255, 255)
-    YELLOW_COLOR = (0, 255, 255)
 
     def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
         """
@@ -252,6 +253,15 @@ class LabelUnwrapper(object):
         self.draw_ellipse(self.point_a, self.point_b, self.point_c, color)
         self.draw_ellipse(self.point_d, self.point_e, self.point_f, color)
 
+    def get_label_mask(self):
+        """
+        Generate mask of the label, fully covering it
+        """
+        mask = np.zeros(self.src_image.shape)
+        pts = np.array([[self.point_a, self.point_c, self.point_d, self.point_f]])
+        cv2.fillPoly(mask, pts, WHITE_COLOR)
+        return mask
+
     def draw_ellipse(self, left, top, right, color=WHITE_COLOR):
         """
         Draw ellipse using opencv function
@@ -333,5 +343,4 @@ if __name__ == '__main__':
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     # dst_image = unwrapper.unwrap()
     # cv2.imwrite("dst-image.jpg", dst_image)
-    unwrapper.draw_mask()
-    cv2.imwrite("out-unwrap.jpg", imcv)
+    cv2.imwrite("mask.jpg", unwrapper.get_label_mask())
