@@ -367,6 +367,6 @@ if __name__ == '__main__':
 
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
-    # dst_image = unwrapper.unwrap()
-    # cv2.imwrite("dst-image.jpg", dst_image)
+    dst_image = unwrapper.unwrap()
+    cv2.imwrite("dst-image.jpg", dst_image)
     cv2.imwrite("mask.jpg", unwrapper.get_label_mask())
