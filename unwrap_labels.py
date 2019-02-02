@@ -257,7 +257,7 @@ class LabelUnwrapper(object):
         Draw ellipse using opencv function
         """
         center = (left + right) / 2
-        center_point = tuple(center.tolist())
+        center_point = tuple(map(lambda x: int(np.round(x)), center.tolist()))
 
         axis = (int(np.linalg.norm(left - right) / 2), int(np.linalg.norm(center - top)))
 
