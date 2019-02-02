@@ -148,7 +148,7 @@ class LabelUnwrapper(object):
                 y_offset = int(dy * row_index)
 
                 self.dst_image[y_offset:y_offset + dy_int,
-                               x_offset:x_offset + dx_int] = dst
+                x_offset:x_offset + dx_int] = dst
 
     def get_roi_rect(self, points):
         max_x = min_x = points[0][0]
@@ -174,7 +174,7 @@ class LabelUnwrapper(object):
     def get_roi(self, image, points):
         rect = self.get_roi_rect(points)
         return image[np.floor(rect[0][1]):np.ceil(rect[2][1]),
-                     np.floor(rect[0][0]):np.ceil(rect[1][0])]
+               np.floor(rect[0][0]):np.ceil(rect[1][0])]
 
     def calc_source_map(self):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c,
@@ -278,21 +278,15 @@ class LabelUnwrapper(object):
 
 
 if __name__ == '__main__':
-    points = [[-0.31667, +0.31406],
-              [-0.03750, +0.39375],
-              [+0.28125, +0.31406],
-              [+0.29792, -0.41094],
-              [-0.01250, -0.51094],
-              [-0.27917, -0.42812]]
+    shape = {"shape": [{"x": 0.1966774926240951, "y": 0.14160193093695747}, {"x": 0.5121546063150226, "y": 0.11453768386725166},
+                       {"x": 0.8397845902038339, "y": 0.14941458034186803}, {"x": 0.7929092337262832, "y": 0.6757871549436255},
+                       {"x": 0.4913211145472225, "y": 0.7350785808085875}, {"x": 0.22966385458977875, "y": 0.6689510867143287}]}
 
-    points = [[-0.24379, +0.37536],
-                [+0.02951, +0.41120],
-                [+0.31177, +0.36080],
-                [+0.26099, -0.29892],
-                [-0.04068, -0.34709],
-                [-0.27366, -0.27876]]
+    points = []
+    for point in shape['shape']:
+        points.append([point['x'], point['y']])
 
-    imcv = cv2.imread('image4.jpg', cv2.IMREAD_UNCHANGED)
+    imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     dst_image = unwrapper.unwrap()
     cv2.imwrite("dst-image.jpg", dst_image)
