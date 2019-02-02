@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 
+BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 YELLOW_COLOR = (0, 255, 255)
 
@@ -250,8 +251,8 @@ class LabelUnwrapper(object):
         cv2.line(self.src_image, tuple(self.point_f.tolist()), tuple(self.point_a.tolist()), color)
         cv2.line(self.src_image, tuple(self.point_c.tolist()), tuple(self.point_d.tolist()), color)
 
-        self.draw_ellipse(self.point_a, self.point_b, self.point_c, color)
-        self.draw_ellipse(self.point_d, self.point_e, self.point_f, color)
+        self.draw_ellipse(self.src_image, self.point_a, self.point_b, self.point_c, color)
+        self.draw_ellipse(self.src_image, self.point_d, self.point_e, self.point_f, color)
 
     def get_label_mask(self):
         """
@@ -260,12 +261,34 @@ class LabelUnwrapper(object):
         mask = np.zeros(self.src_image.shape)
         pts = np.array([[self.point_a, self.point_c, self.point_d, self.point_f]])
         cv2.fillPoly(mask, pts, WHITE_COLOR)
+        self.draw_filled_ellipse(mask, self.point_a, self.point_b, self.point_c, True)
+        self.draw_filled_ellipse(mask, self.point_f, self.point_e, self.point_d, False)
         return mask
 
-    def draw_ellipse(self, left, top, right, color=WHITE_COLOR):
+    def draw_ellipse(self, img, left, top, right, color=WHITE_COLOR):
         """
         Draw ellipse using opencv function
         """
+        is_arc, center_point, axis, angle = self.get_ellipse_params(left, top, right)
+
+        if is_arc:
+            start_angle, end_angle = 0, 180
+        else:
+            start_angle, end_angle = 180, 360
+
+        cv2.ellipse(img, center_point, axis, angle, start_angle, end_angle, color=color)
+
+    def draw_filled_ellipse(self, img, left, top, right, is_top=False):
+        is_arc, center_point, axis, angle = self.get_ellipse_params(left, top, right)
+
+        if is_arc ^ is_top:
+            color = WHITE_COLOR
+        else:
+            color = BLACK_COLOR
+
+        cv2.ellipse(img, center_point, axis, angle, 0, 360, color=color, thickness=-1)
+
+    def get_ellipse_params(self, left, top, right):
         center = (left + right) / 2
         center_point = tuple(map(lambda x: int(np.round(x)), center.tolist()))
 
@@ -274,12 +297,11 @@ class LabelUnwrapper(object):
         x, y = left - right
         angle = np.arctan(float(y) / x) * 57.3
 
+        is_arc = False
         if (top - center)[1] > 0:
-            start_angle, end_angle = 0, 180
-        else:
-            start_angle, end_angle = 180, 360
+            is_arc = True
 
-        cv2.ellipse(self.src_image, center_point, axis, angle, start_angle, end_angle, color=color)
+        return is_arc, center_point, axis, angle
 
     def calc_ellipse_points(self, left, top, right, points_count):
         center = (left + right) / 2
@@ -331,9 +353,13 @@ class LabelUnwrapper(object):
 
 
 if __name__ == '__main__':
-    shape = {"shape": [{"x": 0.1966774926240951, "y": 0.14160193093695747}, {"x": 0.5121546063150226, "y": 0.11453768386725166},
-                       {"x": 0.8397845902038339, "y": 0.14941458034186803}, {"x": 0.7929092337262832, "y": 0.6757871549436255},
-                       {"x": 0.4913211145472225, "y": 0.7350785808085875}, {"x": 0.22966385458977875, "y": 0.6689510867143287}]}
+    shape = {"shape": [{"x": 0.1966774926240951, "y": 0.14160193093695747},
+                       {"x": 0.5121546063150226, "y": 0.11453768386725166},
+                       {"x": 0.8397845902038339, "y": 0.14941458034186803},
+
+                       {"x": 0.7929092337262832, "y": 0.6757871549436255},
+                       {"x": 0.4913211145472225, "y": 0.7350785808085875},
+                       {"x": 0.22966385458977875, "y": 0.6689510867143287}]}
 
     points = []
     for point in shape['shape']:
