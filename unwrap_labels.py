@@ -247,12 +247,23 @@ class LabelUnwrapper(object):
     def draw_poly_mask(self, color=WHITE_COLOR):
         cv2.polylines(self.src_image, np.int32([self.points]), 1, color)
 
-    def draw_mask(self, color=WHITE_COLOR):
-        cv2.line(self.src_image, tuple(self.point_f.tolist()), tuple(self.point_a.tolist()), color)
-        cv2.line(self.src_image, tuple(self.point_c.tolist()), tuple(self.point_d.tolist()), color)
+    def draw_mask(self, color=WHITE_COLOR, thickness=1, img=None):
+        """
+        Draw mask, if image not specified - draw to source image
+        """
+        if img is None:
+            img = self.src_image
 
-        self.draw_ellipse(self.src_image, self.point_a, self.point_b, self.point_c, color)
-        self.draw_ellipse(self.src_image, self.point_d, self.point_e, self.point_f, color)
+        cv2.line(img, tuple(self.point_f.tolist()), tuple(self.point_a.tolist()), color, thickness)
+        cv2.line(img, tuple(self.point_c.tolist()), tuple(self.point_d.tolist()), color, thickness)
+
+        self.draw_ellipse(img, self.point_a, self.point_b, self.point_c, color, thickness)
+        self.draw_ellipse(img, self.point_d, self.point_e, self.point_f, color, thickness)
+
+    def get_label_contour(self, color=WHITE_COLOR, thickness=1):
+        mask = np.zeros(self.src_image.shape)
+        self.draw_mask(color, thickness, mask)
+        return mask
 
     def get_label_mask(self):
         """
@@ -265,7 +276,7 @@ class LabelUnwrapper(object):
         self.draw_filled_ellipse(mask, self.point_f, self.point_e, self.point_d, False)
         return mask
 
-    def draw_ellipse(self, img, left, top, right, color=WHITE_COLOR):
+    def draw_ellipse(self, img, left, top, right, color=WHITE_COLOR, thickness=1):
         """
         Draw ellipse using opencv function
         """
@@ -276,7 +287,7 @@ class LabelUnwrapper(object):
         else:
             start_angle, end_angle = 180, 360
 
-        cv2.ellipse(img, center_point, axis, angle, start_angle, end_angle, color=color)
+        cv2.ellipse(img, center_point, axis, angle, start_angle, end_angle, color, thickness)
 
     def draw_filled_ellipse(self, img, left, top, right, is_top=False):
         is_arc, center_point, axis, angle = self.get_ellipse_params(left, top, right)
@@ -368,5 +379,8 @@ if __name__ == '__main__':
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     dst_image = unwrapper.unwrap()
-    cv2.imwrite("dst-image.jpg", dst_image)
+
+    cv2.imwrite("unwrapped.jpg", dst_image)
+
     cv2.imwrite("mask.jpg", unwrapper.get_label_mask())
+    cv2.imwrite("contour.jpg", unwrapper.get_label_contour())
