@@ -121,9 +121,12 @@ class LabelUnwrapper(object):
         if not len(self.points) == 6:
             raise ValueError("Points should be an array of 6 elements")
 
-    def unwrap(self):
+    def unwrap(self, interpolate=False):
         source_map = self.calc_source_map()
-        self.unwrap_label_perspective(source_map)
+        if interpolate:
+            self.unwrap_label_interpolation(source_map)
+        else:
+            self.unwrap_label_perspective(source_map)
         return self.dst_image
 
     def calc_dest_map(self):
