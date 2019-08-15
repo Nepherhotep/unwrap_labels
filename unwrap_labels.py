@@ -123,7 +123,7 @@ class LabelUnwrapper(object):
 
     def unwrap(self):
         source_map = self.calc_source_map()
-        self.unwrap_label_interpolation(source_map)
+        self.unwrap_label_perspective(source_map)
         return self.dst_image
 
     def calc_dest_map(self):
@@ -364,13 +364,12 @@ class LabelUnwrapper(object):
 
 
 if __name__ == '__main__':
-    shape = {"shape": [{"x": 0.1966774926240951, "y": 0.14160193093695747},
-                       {"x": 0.5121546063150226, "y": 0.11453768386725166},
-                       {"x": 0.8397845902038339, "y": 0.14941458034186803},
-
-                       {"x": 0.7929092337262832, "y": 0.6757871549436255},
-                       {"x": 0.4913211145472225, "y": 0.7350785808085875},
-                       {"x": 0.22966385458977875, "y": 0.6689510867143287}]}
+    shape = {"shape": [{"x": 0.3126446428571428, "y": 0.38397626349156777},
+                       {"x": 0.5034423573721948, "y": 0.4745217268788385},
+                       {"x": 0.7198147321428569, "y": 0.4261371022003115},
+                       {"x": 0.5687537946428569, "y": 0.7040867998532737},
+                       {"x": 0.3787758460171812, "y": 0.7400236037259824},
+                       {"x": 0.2627071428571428, "y": 0.6216388803641303}]}
 
     points = []
     for point in shape['shape']:
@@ -380,6 +379,5 @@ if __name__ == '__main__':
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
     dst_image = unwrapper.unwrap()
 
+    cv2.imwrite("image_with_mesh.jpg", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
-
-    cv2.imwrite("image_with_mask.jpg", imcv)
