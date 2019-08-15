@@ -224,7 +224,7 @@ class LabelUnwrapper(object):
     def calc_source_map(self):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c,
                                               self.COL_COUNT)
-        bottom_points = self.calc_ellipse_points(self.point_d, self.point_e, self.point_f,
+        bottom_points = self.calc_ellipse_points(self.point_f, self.point_e, self.point_d,
                                                  self.COL_COUNT)
 
         rows = []
@@ -240,7 +240,7 @@ class LabelUnwrapper(object):
                 row.append(point)
                 x, y = map(int, point)
 
-                cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=2)
+                # cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=20)
             rows.append(row)
         return np.array(rows)
 
@@ -328,13 +328,16 @@ class LabelUnwrapper(object):
         else:
             delta = - np.pi / (points_count - 1)
 
+        cos_rot = (right - center)[0] / a
+        sin_rot = (right - center)[1] / a
+
         points = []
         for i in range(points_count):
             phi = i * delta
             dx, dy = self.get_ellipse_point(a, b, phi)
 
-            x = int(dx * self.center_line.angle_cos - dy * self.center_line.angle_sin + center[0])
-            y = int(dx * self.center_line.angle_sin + dy * self.center_line.angle_cos + center[1])
+            x = int(center[0] + dx * cos_rot - dy * sin_rot)
+            y = int(center[1] + dx * sin_rot + dy * cos_rot)
 
             points.append([x, y])
 
@@ -376,8 +379,14 @@ if __name__ == '__main__':
         points.append([point['x'], point['y']])
 
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
-    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
-    dst_image = unwrapper.unwrap()
 
-    cv2.imwrite("image_with_mesh.jpg", imcv)
+    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
+
+    dst_image = unwrapper.unwrap()
+    unwrapper.draw_mask()
+
+    for point in unwrapper.points:
+        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=10)
+
+    cv2.imwrite("image_with_mask.jpg", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
