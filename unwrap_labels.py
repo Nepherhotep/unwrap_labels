@@ -123,7 +123,7 @@ class LabelUnwrapper(object):
 
     def unwrap(self):
         source_map = self.calc_source_map()
-        self.unwrap_label_perspective(source_map)
+        self.unwrap_label_interpolation(source_map)
         return self.dst_image
 
     def calc_dest_map(self):
@@ -154,8 +154,8 @@ class LabelUnwrapper(object):
 
         grid_x, grid_y = np.mgrid[0:width - 1:width * 1j, 0:height - 1:height * 1j]
 
-        destination = dest_map.reshape(dest_map.size / 2, 2)
-        source = source_map.reshape(source_map.size / 2, 2)
+        destination = dest_map.reshape(dest_map.size // 2, 2)
+        source = source_map.reshape(source_map.size // 2, 2)
 
         grid_z = griddata(destination, source, (grid_x, grid_y), method='cubic')
         map_x = np.append([], [ar[:, 0] for ar in grid_z]).reshape(width, height)
@@ -240,7 +240,7 @@ class LabelUnwrapper(object):
                 row.append(point)
                 x, y = map(int, point)
 
-                # cv2.line(self.src_image, (x, y), (x, y), color=self.YELLOW_COLOR, thickness=2)
+                cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=2)
             rows.append(row)
         return np.array(rows)
 
@@ -306,7 +306,7 @@ class LabelUnwrapper(object):
         axis = (int(np.linalg.norm(left - right) / 2), int(np.linalg.norm(center - top)))
 
         x, y = left - right
-        angle = np.arctan(float(y) / x) * 57.3
+        angle = np.arctan(float(y) / x) * 57.296
 
         is_arc = False
         if (top - center)[1] > 0:
@@ -382,5 +382,4 @@ if __name__ == '__main__':
 
     cv2.imwrite("unwrapped.jpg", dst_image)
 
-    cv2.imwrite("mask.jpg", unwrapper.get_label_mask())
-    cv2.imwrite("contour.jpg", unwrapper.get_label_contour())
+    cv2.imwrite("image_with_mask.jpg", imcv)
