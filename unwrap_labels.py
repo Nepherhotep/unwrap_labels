@@ -243,12 +243,15 @@ class LabelUnwrapper(object):
 
                 point = top_point - delta * row_index
                 row.append(point)
-                x, y = map(int, point)
-
-                if self.debug_mesh:
-                    cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=3)
             rows.append(row)
         return np.array(rows)
+
+    def draw_mesh(self, color=RED_COLOR, thickness=1):
+        mesh = self.calc_source_map()
+        for row in mesh:
+            for x, y in row:
+                point = (int(round(x)), int(round(y)))
+                cv2.line(self.src_image, point, point, color=color, thickness=thickness)
 
     def draw_poly_mask(self, color=WHITE_COLOR):
         cv2.polylines(self.src_image, np.int32([self.points]), 1, color)
@@ -389,10 +392,11 @@ if __name__ == '__main__':
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points, debug_mesh=True)
 
     dst_image = unwrapper.unwrap()
-    unwrapper.draw_mask()
-
     for point in unwrapper.points:
-        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=RED_COLOR, thickness=3)
+        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=3)
 
-    cv2.imwrite("image_with_mask.jpg", imcv)
+    unwrapper.draw_mask()
+    unwrapper.draw_mesh()
+
+    cv2.imwrite("image_with_mask.png", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
