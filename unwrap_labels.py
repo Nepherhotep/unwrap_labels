@@ -5,6 +5,7 @@ import numpy as np
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 YELLOW_COLOR = (0, 255, 255)
+RED_COLOR = (0, 0, 255)
 
 
 class Line(object):
@@ -245,7 +246,7 @@ class LabelUnwrapper(object):
                 x, y = map(int, point)
 
                 if self.debug_mesh:
-                    cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=1)
+                    cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=3)
             rows.append(row)
         return np.array(rows)
 
@@ -341,8 +342,8 @@ class LabelUnwrapper(object):
             phi = i * delta
             dx, dy = self.get_ellipse_point(a, b, phi)
 
-            x = int(center[0] + dx * cos_rot - dy * sin_rot)
-            y = int(center[1] + dx * sin_rot + dy * cos_rot)
+            x = round(center[0] + dx * cos_rot - dy * sin_rot)
+            y = round(center[1] + dx * sin_rot + dy * cos_rot)
 
             points.append([x, y])
 
@@ -391,7 +392,7 @@ if __name__ == '__main__':
     unwrapper.draw_mask()
 
     for point in unwrapper.points:
-        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=10)
+        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=RED_COLOR, thickness=3)
 
     cv2.imwrite("image_with_mask.jpg", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
