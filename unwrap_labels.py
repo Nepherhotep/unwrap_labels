@@ -5,6 +5,7 @@ import numpy as np
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 YELLOW_COLOR = (0, 255, 255)
+RED_COLOR = (0, 0, 255)
 
 
 class Line(object):
@@ -60,7 +61,7 @@ class LabelUnwrapper(object):
     COL_COUNT = 30
     ROW_COUNT = 20
 
-    def __init__(self, src_image=None, pixel_points=[], percent_points=[], debug_mesh=False):
+    def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
         """
         Point lists are lists of 6 points - [A, B, C, D, E, F]
 
@@ -101,7 +102,6 @@ class LabelUnwrapper(object):
 
         self.center_line = None
         self.load_points()
-        self.debug_mesh = debug_mesh
 
     def load_points(self):
         if not self.points:
@@ -242,12 +242,15 @@ class LabelUnwrapper(object):
 
                 point = top_point - delta * row_index
                 row.append(point)
-                x, y = map(int, point)
-
-                if self.debug_mesh:
-                    cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=1)
             rows.append(row)
         return np.array(rows)
+
+    def draw_mesh(self, color=RED_COLOR, thickness=1):
+        mesh = self.calc_source_map()
+        for row in mesh:
+            for x, y in row:
+                point = (int(round(x)), int(round(y)))
+                cv2.line(self.src_image, point, point, color=color, thickness=thickness)
 
     def draw_poly_mask(self, color=WHITE_COLOR):
         cv2.polylines(self.src_image, np.int32([self.points]), 1, color)
@@ -341,8 +344,8 @@ class LabelUnwrapper(object):
             phi = i * delta
             dx, dy = self.get_ellipse_point(a, b, phi)
 
-            x = int(center[0] + dx * cos_rot - dy * sin_rot)
-            y = int(center[1] + dx * sin_rot + dy * cos_rot)
+            x = round(center[0] + dx * cos_rot - dy * sin_rot)
+            y = round(center[1] + dx * sin_rot + dy * cos_rot)
 
             points.append([x, y])
 
@@ -385,13 +388,13 @@ if __name__ == '__main__':
 
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
 
-    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points, debug_mesh=True)
+    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
 
     dst_image = unwrapper.unwrap()
-    unwrapper.draw_mask()
-
     for point in unwrapper.points:
-        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=10)
+        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=3)
 
-    cv2.imwrite("image_with_mask.jpg", imcv)
+    # unwrapper.draw_mesh()
+
+    cv2.imwrite("image_with_mask.png", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
