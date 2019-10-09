@@ -60,7 +60,7 @@ class LabelUnwrapper(object):
     COL_COUNT = 30
     ROW_COUNT = 20
 
-    def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
+    def __init__(self, src_image=None, pixel_points=[], percent_points=[], debug_mesh=False):
         """
         Point lists are lists of 6 points - [A, B, C, D, E, F]
 
@@ -101,6 +101,7 @@ class LabelUnwrapper(object):
 
         self.center_line = None
         self.load_points()
+        self.debug_mesh = debug_mesh
 
     def load_points(self):
         if not self.points:
@@ -243,7 +244,8 @@ class LabelUnwrapper(object):
                 row.append(point)
                 x, y = map(int, point)
 
-                # cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=20)
+                if self.debug_mesh:
+                    cv2.line(self.src_image, (x, y), (x, y), color=YELLOW_COLOR, thickness=1)
             rows.append(row)
         return np.array(rows)
 
@@ -370,13 +372,12 @@ class LabelUnwrapper(object):
 
 
 if __name__ == '__main__':
-    shape = { "shape": [{"x": 0.3188868303571427, "y": 0.36429993124288074},
-                        {"x": 0.4896667353258619, "y": 0.4782678882557641},
-                        {"x": 0.7148209821428567, "y": 0.448621636042158},
-
-                        {"x": 0.5712506696428569, "y": 0.6994000442730395},
-                        {"x": 0.38821172188466563, "y": 0.7400212911594474},
-                        {"x": 0.26021026785714274, "y": 0.6338167815699365}]}
+    shape = {"tag": "label", "shape": [{"x": 0.012232142857142842, "y": 0.2219140625},
+                               {"x": 0.48655701811449864, "y": 0.14404355243445227},
+                               {"x": 0.9632539682539681, "y": 0.2171875},
+                               {"x": 0.9466567460317459, "y": 0.7276953125},
+                               {"x": 0.48447501824501454, "y": 0.7952298867391453},
+                               {"x": 0.023134920634920626, "y": 0.7258984375}]}
 
     points = []
     for point in shape['shape']:
@@ -384,7 +385,7 @@ if __name__ == '__main__':
 
     imcv = cv2.imread('image.jpg', cv2.IMREAD_UNCHANGED)
 
-    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
+    unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points, debug_mesh=True)
 
     dst_image = unwrapper.unwrap()
     unwrapper.draw_mask()
