@@ -104,7 +104,7 @@ class LabelUnwrapper(object):
         self.load_points()
 
     def load_points(self):
-        if not self.points:
+        if self.points is None:
             points = []
             for point in self.percent_points:
                 x = int(point[0] * self.width)

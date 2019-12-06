@@ -5,7 +5,7 @@ __author__ = 'Alexey Zankevich'
 
 setup(
     name="unwrap_labels",
-    version="1.0.8",
+    version="1.1.0",
     py_modules=['unwrap_labels'],
     author="Alexey Zankevich",
     author_email="alex.zankevich@gmail.com",
