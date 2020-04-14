@@ -35,14 +35,5 @@ library size):
 ![unwrapped](https://raw.githubusercontent.com/Nepherhotep/unwrap_labels/master/samples/sample1/unwrapped.jpg)
 
 
-## Makers detection
-
-Makers detection is not a part of this library, however, I'll provide some clues
-how to do that:
-
-1. Hough transform to detect vertical lines edges of the bottle (lines A-F, C-D)
-2. Due to bottle's symmetry - another Hough transform to detect upper and bottom ellipses.
-A-B-C ellipse can be reduced to just A-B coordinate, as well C-D-F - to just D-F (assuming vertical lines
-are already detected).
-
-Alternatively, you can use neural networks, which will provide more stable behavior for complicated cases
+## Unwrapping + Stitching
+See our AI based service for auto unwrapping and stitching https://perfectlabel.io/
