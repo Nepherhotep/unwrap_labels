@@ -36,4 +36,4 @@ library size):
 
 
 ## Unwrapping + Stitching
-See our AI based service for auto unwrapping and stitching https://perfectlabel.io/
+See our AI based service for auto unwrapping and stitching [https://perfectlabel.io](https://bit.ly/3cnwu0D)
