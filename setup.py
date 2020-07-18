@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="unwrap_labels",
-    version="1.1.1",
+    version="1.1.2",
     py_modules=['unwrap_labels'],
     author=__author__,
     author_email="alex.zankevich@gmail.com",
