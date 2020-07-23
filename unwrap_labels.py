@@ -61,12 +61,12 @@ class LabelUnwrapper(object):
     COL_COUNT = 30
     ROW_COUNT = 20
 
-    def __init__(self, src_image=None, pixel_points=[], percent_points=[]):
+    def __init__(self, src_image=None, pixel_points=None, percent_points=None):
         """
         Point lists are lists of 6 points - [A, B, C, D, E, F]
 
-        :param pixel_points: Points, whose coordinates specified as pixels
-        :param percent_points: Points, whose coordinates specified as fraction of image width/height
+        :param pixel_points: List[Tuple] Points, whose coordinates specified as pixels
+        :param percent_points: List[Tuple] Points, whose coordinates specified as fraction of image width/height
 
         In both cases points represent figure below:
 
@@ -104,14 +104,16 @@ class LabelUnwrapper(object):
         self.load_points()
 
     def load_points(self):
-        if not self.points:
+        if self.points is None:
             points = []
             for point in self.percent_points:
                 x = int(point[0] * self.width)
                 y = int(point[1] * self.height)
                 points.append((x, y))
 
-            self.points = np.array(points)
+            self.points = points
+
+        self.points = np.array(self.points)
         (self.point_a, self.point_b, self.point_c,
          self.point_d, self.point_e, self.point_f) = self.points
 
@@ -197,7 +199,7 @@ class LabelUnwrapper(object):
                 y_offset = int(dy * row_index)
 
                 self.dst_image[y_offset:y_offset + dy_int,
-                x_offset:x_offset + dx_int] = dst
+                               x_offset:x_offset + dx_int] = dst
 
     def get_roi_rect(self, points):
         max_x = min_x = points[0][0]
@@ -223,7 +225,7 @@ class LabelUnwrapper(object):
     def get_roi(self, image, points):
         rect = self.get_roi_rect(points)
         return image[np.floor(rect[0][1]):np.ceil(rect[2][1]),
-               np.floor(rect[0][0]):np.ceil(rect[1][0])]
+                     np.floor(rect[0][0]):np.ceil(rect[1][0])]
 
     def calc_source_map(self):
         top_points = self.calc_ellipse_points(self.point_a, self.point_b, self.point_c,
@@ -376,11 +378,11 @@ class LabelUnwrapper(object):
 
 if __name__ == '__main__':
     shape = {"tag": "label", "shape": [{"x": 0.012232142857142842, "y": 0.2219140625},
-                               {"x": 0.48655701811449864, "y": 0.14404355243445227},
-                               {"x": 0.9632539682539681, "y": 0.2171875},
-                               {"x": 0.9466567460317459, "y": 0.7276953125},
-                               {"x": 0.48447501824501454, "y": 0.7952298867391453},
-                               {"x": 0.023134920634920626, "y": 0.7258984375}]}
+                                       {"x": 0.48655701811449864, "y": 0.14404355243445227},
+                                       {"x": 0.9632539682539681, "y": 0.2171875},
+                                       {"x": 0.9466567460317459, "y": 0.7276953125},
+                                       {"x": 0.48447501824501454, "y": 0.7952298867391453},
+                                       {"x": 0.023134920634920626, "y": 0.7258984375}]}
 
     points = []
     for point in shape['shape']:
