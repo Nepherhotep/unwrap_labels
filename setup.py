@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="unwrap_labels",
-    version="1.1.2",
+    version="1.1.3",
     py_modules=['unwrap_labels'],
     author=__author__,
     author_email="alex.zankevich@gmail.com",
@@ -23,5 +23,6 @@ setup(
                  "Programming Language :: Python :: 2.7",
                  "Programming Language :: Python :: 3.5",
                  "Programming Language :: Python :: 3.6",
-                 "Programming Language :: Python :: 3.7"]
+                 "Programming Language :: Python :: 3.7",
+                 "Programming Language :: Python :: 3.8"]
 )
