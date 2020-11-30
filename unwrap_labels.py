@@ -89,7 +89,6 @@ class LabelUnwrapper(object):
         self.width = self.src_image.shape[1]
         self.height = src_image.shape[0]
 
-        self.dst_image = None
         self.points = pixel_points
         self.percent_points = percent_points
 
@@ -124,16 +123,21 @@ class LabelUnwrapper(object):
         if not len(self.points) == 6:
             raise ValueError("Points should be an array of 6 elements")
 
-    def unwrap(self, interpolate=False):
+    def unwrap(self, image=None):
         source_map = self.calc_source_map()
-        if interpolate:
-            self.unwrap_label_interpolation(source_map)
-        else:
-            self.unwrap_label_perspective(source_map)
-        return self.dst_image
+        dest_map = self.calc_dest_map()
+        width, height = self.get_output_label_size()
+        return self.unwrap_label_interpolation(source_map, dest_map, width, height, image)
+
+    def wrap(self, mask_image):
+        source_map = self.calc_source_map()
+        dest_map = self.calc_dest_map()
+
+        height, width = self.src_image.shape[:2]
+        return self.unwrap_label_interpolation(dest_map, source_map, width, height, mask_image)
 
     def calc_dest_map(self):
-        width, height = self.get_label_size()
+        width, height = self.get_output_label_size()
 
         dx = float(width) / (self.COL_COUNT - 1)
         dy = float(height) / (self.ROW_COUNT - 1)
@@ -148,15 +152,14 @@ class LabelUnwrapper(object):
             rows.append(row)
         return np.array(rows)
 
-    def unwrap_label_interpolation(self, source_map):
+    def unwrap_label_interpolation(self, source_map, dest_map, width, height, image=None):
         """
         Unwrap label using interpolation - more accurate method in terms of quality
         """
         from scipy.interpolate import griddata
 
-        width, height = self.get_label_size()
-
-        dest_map = self.calc_dest_map()
+        if image is None:
+            image = self.src_image
 
         grid_x, grid_y = np.mgrid[0:width - 1:width * 1j, 0:height - 1:height * 1j]
 
@@ -168,38 +171,8 @@ class LabelUnwrapper(object):
         map_y = np.append([], [ar[:, 1] for ar in grid_z]).reshape(width, height)
         map_x_32 = map_x.astype('float32')
         map_y_32 = map_y.astype('float32')
-        warped = cv2.remap(self.src_image, map_x_32, map_y_32, cv2.INTER_CUBIC)
-        self.dst_image = cv2.transpose(warped)
-
-    def unwrap_label_perspective(self, source_map):
-        """
-        Unwrap label using transform, unlike unwrap_label_interpolation doesn't require scipy
-        """
-        width, height = self.get_label_size()
-        self.dst_image = np.zeros((height, width, 3), np.uint8)
-
-        dx = float(width) / (self.COL_COUNT - 1)
-        dy = float(height) / (self.ROW_COUNT - 1)
-
-        dx_int = int(np.ceil(dx))
-        dy_int = int(np.ceil(dy))
-
-        for row_index in range(self.ROW_COUNT - 1):
-            for col_index in range(self.COL_COUNT - 1):
-                src_cell = (source_map[row_index][col_index],
-                            source_map[row_index][col_index + 1],
-                            source_map[row_index + 1][col_index],
-                            source_map[row_index + 1][col_index + 1])
-
-                dst_cell = np.int32([[0, 0], [dx, 0], [0, dy], [dx, dy]])
-
-                M = cv2.getPerspectiveTransform(np.float32(src_cell), np.float32(dst_cell))
-                dst = cv2.warpPerspective(self.src_image, M, (dx_int, dy_int))
-                x_offset = int(dx * col_index)
-                y_offset = int(dy * row_index)
-
-                self.dst_image[y_offset:y_offset + dy_int,
-                               x_offset:x_offset + dx_int] = dst
+        warped = cv2.remap(image, map_x_32, map_y_32, cv2.INTER_CUBIC)
+        return cv2.transpose(warped)
 
     def get_roi_rect(self, points):
         max_x = min_x = points[0][0]
@@ -360,7 +333,7 @@ class LabelUnwrapper(object):
         """
         return a * np.cos(phi), b * np.sin(phi)
 
-    def get_label_size(self):
+    def get_output_label_size(self):
         top_left = self.point_a
         top_right = self.point_c
         bottom_right = self.point_d
@@ -393,10 +366,14 @@ if __name__ == '__main__':
     unwrapper = LabelUnwrapper(src_image=imcv, percent_points=points)
 
     dst_image = unwrapper.unwrap()
-    for point in unwrapper.points:
-        cv2.line(unwrapper.src_image, tuple(point), tuple(point), color=YELLOW_COLOR, thickness=3)
+    mask = np.zeros(dst_image.shape, dtype=np.uint8)
 
-    # unwrapper.draw_mesh()
+    for p in [(10, 10), (100, 100), (10, 100), (50, 50), (100, 10), (300, 300), (305, 203)]:
+        cv2.line(dst_image, p, p, color=WHITE_COLOR, thickness=3)
+        cv2.line(mask, p, p, color=WHITE_COLOR, thickness=3)
 
-    cv2.imwrite("image_with_mask.png", imcv)
     cv2.imwrite("unwrapped.jpg", dst_image)
+    cv2.imwrite("unwrapped_mask.jpg", mask)
+
+    cv2.imwrite("wrapped.jpg", unwrapper.wrap(dst_image))
+    cv2.imwrite("wrapped_mask.jpg", unwrapper.wrap(mask))
